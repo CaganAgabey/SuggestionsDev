@@ -1,11 +1,11 @@
 const Eris = require('eris');
 const fs = require('fs');
-const client = new Eris("NzA5MzUxMjg2OTIyOTM2MzYy.Xrko3Q.kMP7KWnGEuCPPuJwB6EhsmY2ap8");
+const client = new Eris("");
 const db = require('quick.db');
 client.commands = new Eris.Collection(undefined, undefined);
 client.aliases = new Eris.Collection(undefined, undefined);
 const DBL = require('dblapi.js')
-const dbl = new DBL("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjcwOTM1MTI4NjkyMjkzNjM2MiIsImJvdCI6dHJ1ZSwiaWF0IjoxNTkwNTY3OTk2fQ.iDcVIq9MjAzpOCZ88iUK5eI2wxeW7zpsseAPjzO_InI")
+const dbl = new DBL("")
 const awaitingsuggestions = new Eris.Collection(undefined, undefined)
 let version = "0.5.2"
 
