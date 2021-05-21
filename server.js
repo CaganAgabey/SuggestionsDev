@@ -1,13 +1,15 @@
 const Eris = require('eris');
 const fs = require('fs');
-const client = new Eris("");
+const settings = require("./settings.json")
+const client = new Eris(settings.token);
 const db = require('quick.db');
 client.commands = new Eris.Collection(undefined, undefined);
 client.aliases = new Eris.Collection(undefined, undefined);
 const DBL = require('dblapi.js')
-const dbl = new DBL("")
+const dbl = new DBL(settings.dbltoken)
 const awaitingsuggestions = new Eris.Collection(undefined, undefined)
-let version = "0.5.2"
+const version = "1.0";
+const { manageSuggestion, deleteSuggestion } = require('./functions')
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -294,205 +296,17 @@ client.on('messageReactionAdd', async (message, emoji, user) => {
   const sugname = db.all().filter(x => x.ID.startsWith(`suggestion_${message.guildID}_`) && db.fetch(`${x.ID}.msgid`) == message.id)[0].ID
   client.guilds.get(message.guildID).channels.get(message.channel.id).getMessage(message.id).then(async msg => {
     const dil = db.fetch(`dil_${msg.guildID}`) || "english";
+    const sugid = Number(msg.embeds[0].title.replace('Suggestion #', '').replace('Öneri #', ''))
     msg.getReaction(db.fetch(`${sugname}.approveemoji`)).then(async rec => {
       if (!db.has(`autoapprove_${msg.guildID}`)) return;
       if (rec.length - 1 >= db.fetch(`autoapprove_${msg.guildID}`)) {
-        if (dil == "english") {
-          const sugid = Number(msg.embeds[0].title.replace('Suggestion #', '').replace('Öneri #', ''))
-          const user = client.users.get(db.fetch(`suggestion_${message.guildID}_${sugid}.author`))
-          if (!db.has(`approvedchannel_${message.guildID}`) || !msg.channel.guild.channels.has(db.fetch(`approvedchannel_${message.guildID}`)) || db.fetch(`approvedchannel_${message.guildID}`) == msg.channel.id) {
-            msg.edit({
-              embed: {
-                title: `Suggestion #${sugid}`,
-                description: db.fetch(`suggestion_${message.guildID}_${sugid}.suggestion`),
-                color: colorToSignedBit("#00FFFF000"),
-                author: {
-                  name: `Approved suggestion - ${user.username}#${user.discriminator}`,
-                  icon_url: user.avatarURL || user.defaultAvatarURL
-                },
-                footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL},
-                image: {url: db.fetch(`suggestion_${message.guildID}_${sugid}.attachment`)}
-              }
-            })
-            db.set(`suggestion_${message.guildID}_${sugid}.channel`, msg.channel.id)
-          }
-          if (db.has(`approvedchannel_${message.guildID}`) && msg.channel.guild.channels.has(db.fetch(`approvedchannel_${message.guildID}`)) && db.fetch(`approvedchannel_${message.guildID}`) != msg.channel.id) {
-            msg.delete()
-            msg.channel.guild.channels.get(db.fetch(`approvedchannel_${message.guildID}`)).createMessage({
-              embed: {
-                title: `Suggestion #${sugid}`,
-                description: db.fetch(`suggestion_${message.guildID}_${sugid}.suggestion`),
-                color: colorToSignedBit("#00FF000"),
-                author: {
-                  name: `Approved suggestion - ${user.username}#${user.discriminator}`,
-                  icon_url: user.avatarURL || user.defaultAvatarURL
-                },
-                footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL},
-                image: {url: db.fetch(`suggestion_${message.guildID}_${sugid}.attachment`)}
-              }
-            }).then(async masg => {
-              db.set(`suggestion_${message.guildID}_${sugid}.channel`, masg.channel.id)
-              db.set(`suggestion_${message.guildID}_${sugid}.msgid`, masg.id)
-            })
-          }
-          db.set(`suggestion_${msg.guildID}_${sugid}.status`, 'approved')
-          if (msg) msg.removeReactions()
-          if (!db.has(`denydm_${user.id}`)) user.getDMChannel().then(async ch => ch.createMessage({
-            embed: {
-              title: 'Your suggestion has approved!',
-              description: `Your suggestion has approved in \`${msg.channel.guild.name}\`.\n**Suggestion:** ${db.fetch(`suggestion_${msg.guildID}_${sugid}.suggestion`)}\n**Suggestion number:** ${sugid}`,
-              color: colorToSignedBit("#00FF000")
-            }
-          }))
-        }
-        if (dil == "turkish") {
-          const sugid = msg.embeds[0].title.replace('Öneri #', '').replace('Suggestion #', '')
-          const user = client.users.get(db.fetch(`suggestion_${message.guildID}_${sugid}.author`))
-          if (!db.has(`approvedchannel_${message.guildID}`) || !msg.channel.guild.channels.has(db.fetch(`approvedchannel_${message.guildID}`)) || db.fetch(`approvedchannel_${message.guildID}`) == msg.channel.id) {
-            msg.edit({
-              embed: {
-                title: `Öneri #${sugid}`,
-                description: db.fetch(`suggestion_${message.guildID}_${sugid}.suggestion`),
-                color: colorToSignedBit("#00FF000"),
-                author: {
-                  name: `Onaylanmış öneri - ${user.username}#${user.discriminator}`,
-                  icon_url: user.avatarURL || user.defaultAvatarURL
-                },
-                footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL},
-                image: {url: db.fetch(`suggestion_${message.guildID}_${sugid}.attachment`)}
-              }
-            })
-            db.set(`suggestion_${message.guildID}_${sugid}.channel`, msg.channel.id)
-          }
-          if (db.has(`approvedchannel_${message.guildID}`) && msg.channel.guild.channels.has(db.fetch(`approvedchannel_${message.guildID}`)) && db.fetch(`approvedchannel_${message.guildID}`) != msg.channel.id) {
-            msg.delete()
-            msg.channel.guild.channels.get(db.fetch(`approvedchannel_${message.guildID}`)).createMessage({
-              embed: {
-                title: `Öneri #${sugid}`,
-                description: db.fetch(`suggestion_${message.guildID}_${sugid}.suggestion`),
-                color: colorToSignedBit("#00FF000"),
-                author: {
-                  name: `Onaylanmış öneri - ${user.username}#${user.discriminator}`,
-                  icon_url: user.avatarURL || user.defaultAvatarURL
-                },
-                footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL},
-                image: {url: db.fetch(`suggestion_${message.guildID}_${sugid}.attachment`)}
-              }
-            }).then(async masg => {
-              db.set(`suggestion_${message.guildID}_${sugid}.channel`, masg.channel.id)
-              db.set(`suggestion_${message.guildID}_${sugid}.msgid`, masg.id)
-            })
-          }
-          db.set(`suggestion_${msg.guildID}_${sugid}.status`, 'approved')
-          if (msg) msg.removeReactions()
-          if (!db.has(`denydm_${user.id}`)) user.getDMChannel().then(async ch => ch.createMessage({
-            embed: {
-              title: 'Önerin onaylandı!',
-              description: `Önerin \`${msg.channel.guild.name}\` adlı sunucuda onaylandı.\n**Öneri:** ${db.fetch(`suggestion_${msg.guildID}_${sugid}.suggestion`)}\n**Öneri numarası:** ${sugid}`,
-              color: colorToSignedBit("#00FF000")
-            }
-          }))
-        }
+        manageSuggestion(msg, msg.channel.guild, sugid, 'Approved', client, dil, [])
       }
     })
     msg.getReaction(db.fetch(`${sugname}.denyemoji`)).then(async rec => {
       if (!db.has(`autodeny_${msg.guildID}`)) return;
       if (rec.length - 1 >= db.fetch(`autodeny_${msg.guildID}`)) {
-        if (dil == "english") {
-          const sugid = msg.embeds[0].title.replace('Suggestion #', '').replace('Öneri #', '')
-          const user = client.users.get(db.fetch(`suggestion_${message.guildID}_${sugid}.author`))
-          if (!db.has(`deniedchannel_${message.guildID}`) || !msg.channel.guild.channels.has(db.fetch(`deniedchannel_${message.guildID}`)) || db.fetch(`deniedchannel_${message.guildID}`) == msg.channel.id) {
-            msg.edit({
-              embed: {
-                title: `Suggestion #${sugid}`,
-                description: db.fetch(`suggestion_${message.guildID}_${sugid}.suggestion`),
-                color: 16711680,
-                author: {
-                  name: `Denied suggestion - ${user.username}#${user.discriminator}`,
-                  icon_url: user.avatarURL || user.defaultAvatarURL
-                },
-                footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL},
-                image: {url: db.fetch(`suggestion_${message.guildID}_${sugid}.attachment`)}
-              }
-            })
-            db.set(`suggestion_${message.guildID}_${sugid}.channel`, msg.channel.id)
-          }
-          if (db.has(`deniedchannel_${message.guildID}`) && db.fetch(`deniedchannel_${message.guildID}`) != msg.channel.id) {
-            msg.delete()
-            msg.channel.guild.channels.get(db.fetch(`deniedchannel_${message.guildID}`)).createMessage({
-              embed: {
-                title: `Suggestion #${sugid}`,
-                description: db.fetch(`suggestion_${message.guildID}_${sugid}.suggestion`),
-                color: 16711680,
-                author: {
-                  name: `Denied suggestion - ${user.username}#${client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).discriminator}`,
-                  icon_url: client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).avatarURL || client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).defaultAvatarURL
-                },
-                footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL},
-                image: {url: db.fetch(`suggestion_${message.guildID}_${sugid}.attachment`)}
-              }
-            }).then(async masg => {
-              db.set(`suggestion_${message.guildID}_${sugid}.channel`, masg.channel.id)
-              db.set(`suggestion_${message.guildID}_${sugid}.msgid`, masg.id)
-            })
-          }
-          db.set(`suggestion_${msg.guildID}_${sugid}.status`, 'denied')
-          if (msg) msg.removeReactions()
-          if (!db.has(`denydm_${db.fetch(`suggestion_${message.guildID}_${sugid}.author`)}`)) client.users.get(db.fetch(`suggestion_${msg.guildID}_${sugid}.author`)).getDMChannel().then(async ch => ch.createMessage({
-            embed: {
-              title: 'Your suggestion has denied!',
-              description: `Your suggestion has denied in \`${msg.channel.guild.name}\`.\n**Suggestion:** ${db.fetch(`suggestion_${msg.guildID}_${sugid}.suggestion`)}\n**Suggestion number:** ${sugid}`,
-              color: 16711680
-            }
-          }))
-        }
-        if (dil == "turkish") {
-          const sugid = msg.embeds[0].title.replace('Suggestion #', '').replace('Öneri #', '')
-          if (!db.has(`deniedchannel_${message.guildID}`) || db.fetch(`deniedchannel_${message.guildID}`) == msg.channel.id || !msg.channel.guild.channels.has(db.fetch(`deniedchannel_${message.guildID}`))) {
-            msg.edit({
-              embed: {
-                title: `Öneri #${sugid}`,
-                description: db.fetch(`suggestion_${message.guildID}_${sugid}.suggestion`),
-                color: 16711680,
-                author: {
-                  name: `Reddedilmiş öneri - ${client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).username}#${client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).discriminator}`,
-                  icon_url: client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).avatarURL || client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).defaultAvatarURL
-                },
-                footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL},
-                image: {url: db.fetch(`suggestion_${message.guildID}_${sugid}.attachment`)}
-              }
-            })
-            db.set(`suggestion_${message.guildID}_${sugid}.channel`, msg.channel.id)
-          }
-          if (db.has(`deniedchannel_${message.guildID}`) && db.fetch(`deniedchannel_${message.guildID}`) != msg.channel.id) {
-            msg.delete()
-            client.guilds.get(message.guildID).channels.get(db.fetch(`deniedchannel_${message.guildID}`)).createMessage({
-              embed: {
-                title: `Öneri #${sugid}`,
-                description: db.fetch(`suggestion_${message.guildID}_${sugid}.suggestion`),
-                color: 16711680,
-                author: {
-                  name: `Reddedilmiş öneri - ${client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).username}#${client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).discriminator}`,
-                  icon_url: client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).avatarURL || client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).defaultAvatarURL
-                },
-                footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL},
-                image: {url: db.fetch(`suggestion_${message.guildID}_${sugid}.attachment`)}
-              }
-            }).then(async masg => {
-              db.set(`suggestion_${message.guildID}_${sugid}.channel`, masg.channel.id)
-              db.set(`suggestion_${message.guildID}_${sugid}.msgid`, masg.id)
-            })
-          }
-          db.set(`suggestion_${msg.guildID}_${sugid}.status`, 'denied')
-          if (msg) msg.removeReactions()
-          if (!db.has(`denydm_${db.fetch(`suggestion_${message.guildID}_${sugid}.author`)}`)) client.users.get(db.fetch(`suggestion_${msg.guildID}_${sugid}.author`)).getDMChannel().then(async ch => ch.createMessage({
-            embed: {
-              title: 'Önerin reddedildi!',
-              description: `Önerin \`${msg.channel.guild.name}\` adlı sunucuda reddedildi.\n**Öneri:** ${db.fetch(`suggestion_${msg.guildID}_${sugid}.suggestion`)}\n**Öneri numarası:** ${sugid}`,
-              color: 16711680
-            }
-          }))
-        }
+        manageSuggestion(msg, msg.channel.guild, sugid, 'Denied', client, dil, [])
       }
     })
   })
@@ -628,59 +442,13 @@ client.on('messageReactionAdd', async (message, emoji, userID) => {
   }
 })
 
-/*
-client.on('messageCreate', async message => {
-  if (!message.guildID) return;
-  if (message.author.bot) return;
-  let prefix = db.fetch(`prefix_${message.guildID}`) || ".";
-  let dil = db.fetch(`dil_${message.guildID}`) || "english";
-  if (!message.content.startsWith(prefix)) return;
-  if (dil == "english") {
-    if (message.content.startsWith(`${prefix}denyvoting`)) return message.channel.createMessage(`Use **${prefix}allowvoting** instead of this.`)
-    if (message.content.startsWith(`${prefix}suggest `) || message.content.startsWith(`${prefix}suggestion `) || message.content.startsWith(`${prefix}öner `) || message.content.startsWith(`${prefix}öneri `)) return message.channel.createMessage(`Write to the suggestion channel of this guild instead of using this command.`)
-    if (message.content.startsWith(`${prefix}approve `) || message.content.startsWith(`${prefix}approvesuggestion `) || message.content.startsWith(`${prefix}onayla `) || message.content.startsWith(`${prefix}onay `) || message.content.startsWith(`${prefix}delete `) || message.content.startsWith(`${prefix}deletesuggestion `) || message.content.startsWith(`${prefix}önerisil `) || message.content.startsWith(`${prefix}sil `) || message.content.startsWith(`${prefix}deny `) || message.content.startsWith(`${prefix}denysuggestion `) || message.content.startsWith(`${prefix}reddet `) || message.content.startsWith(`${prefix}red `) || message.content.startsWith(`${prefix}invalid `) || message.content.startsWith(`${prefix}invalidsuggestion `) || message.content.startsWith(`${prefix}maybe `) || message.content.startsWith(`${prefix}maybesuggestion `) || message.content.startsWith(`${prefix}belki `) || message.content.startsWith(`${prefix}massapprove `) || message.content.startsWith(`${prefix}massapprovesuggestion `) || message.content.startsWith(`${prefix}çokluonayla `) || message.content.startsWith(`${prefix}çokluonay `) || message.content.startsWith(`${prefix}attach `) || message.content.startsWith(`${prefix}attachimage `) || message.content.startsWith(`${prefix}resimekle `)) {
-      await sleep(1500)
-      message.channel.getMessage(message.channel.lastMessageID).then(async msg =>
-          msg.getReaction(`✅`).then(async rec =>
-              msg.getReaction(`⏲`).then(async reci => {
-                if (msg.author.id != client.user.id && !rec[0]) {
-                  if (!reci[0]) {
-                    message.getReaction(`✅`).then(async recce =>
-                        message.getReaction(`⏲`).then(async reccea => {
-                          if (!recce[0] && !reccea[0]) return message.channel.createMessage(`This suggestion's message has been deleted, so you can't manage this suggestion.`)
-                        }))
-                  }
-                }
-              })))
-    }
-  }
-  if (dil == "turkish") {
-    if (message.content.startsWith(`${prefix}oylamareddi`)) return message.channel.createMessage(`Bunun yerine **${prefix}oylamaizni** kullanın.`)
-    if (message.content.startsWith(`${prefix}suggest `) || message.content.startsWith(`${prefix}suggestion `) || message.content.startsWith(`${prefix}öner `) || message.content.startsWith(`${prefix}öneri `)) return message.channel.createMessage(`Bu komudu kullanmak yerine sunucunun öneri kanalına yazın.`)
-    if (message.content.startsWith(`${prefix}approve `) || message.content.startsWith(`${prefix}approvesuggestion `) || message.content.startsWith(`${prefix}onayla `) || message.content.startsWith(`${prefix}onay `) || message.content.startsWith(`${prefix}delete `) || message.content.startsWith(`${prefix}deletesuggestion `) || message.content.startsWith(`${prefix}önerisil `) || message.content.startsWith(`${prefix}sil `) || message.content.startsWith(`${prefix}deny `) || message.content.startsWith(`${prefix}denysuggestion `) || message.content.startsWith(`${prefix}reddet `) || message.content.startsWith(`${prefix}red `) || message.content.startsWith(`${prefix}invalid `) || message.content.startsWith(`${prefix}invalidsuggestion `) || message.content.startsWith(`${prefix}maybe `) || message.content.startsWith(`${prefix}maybesuggestion `) || message.content.startsWith(`${prefix}belki `) || message.content.startsWith(`${prefix}massapprove `) || message.content.startsWith(`${prefix}massapprovesuggestion `) || message.content.startsWith(`${prefix}çokluonayla `) || message.content.startsWith(`${prefix}çokluonay `) || message.content.startsWith(`${prefix}attach `) || message.content.startsWith(`${prefix}attachimage `) || message.content.startsWith(`${prefix}resimekle `)) {
-      await sleep(1500)
-      message.channel.getMessage(message.channel.lastMessageID).then(async msg =>
-          msg.getReaction(`✅`).then(async rec =>
-              msg.getReaction(`⏲`).then(async reci => {
-                if (msg.author.id != client.user.id && !rec[0]) {
-                  if (!reci[0]) {
-                    message.getReaction(`✅`).then(async recce =>
-                        message.getReaction(`⏲`).then(async reccea => {
-                          if (!recce[0] && !reccea[0]) return message.channel.createMessage(`Bu önerinin mesajı silinmiş, bu sebeple bu öneriyi yönetemezsin.`)
-                        }))
-                  }
-                }
-              })))
-    }
-  }
-})
-*/
-
 client.on('messageDelete', async message => {
   await sleep(1000)
   const all = db.all().filter(i => i.ID.startsWith(`suggestion_`) && db.fetch(`${i.ID}.msgid`) == message.id)
   if (all.length != 0) {
-    for (const i of all) db.set(`${i.ID}.status`, 'deleted')
+    for (const i of all) {
+      deleteSuggestion(null, client.guilds.get(db.fetch(`${i.ID}.guild`)), Number(i.ID.split('_')[2]), client, 'english', [], true)
+    }
   }
 })
 

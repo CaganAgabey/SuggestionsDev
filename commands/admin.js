@@ -3,7 +3,7 @@ const db = require('quick.db');
 
 module.exports.run = async (client, message, args) => {
 
-  function colorToSigned24Bit(s) {
+  function colorToSignedBit(s) {
     return (parseInt(s.substr(1), 16) << 8) / 256;
 }
 
@@ -15,7 +15,7 @@ if (dil == "english") {
   let helpcommands = client.commands.filter(prop => prop.help.category == "admin" && prop.help.name != "help")
   if (helpcommands.length == 0) return message.channel.createMessage(`There's not any commands in this category.`)
   let helpcommandsmap = helpcommands.map(p => '<:rightarrow:709539888411836526> **' + prefix + p.help.name + '** ' + p.help.descriptionen + `\n`).join('')
-  message.channel.createMessage({embed: {title: '__**Admin Commands**__', description: helpcommandsmap, color: colorToSigned24Bit("#2F3136"), footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}}})
+  message.channel.createMessage({embed: {title: '__**Admin Commands**__', description: helpcommandsmap, color: colorToSignedBit("#2F3136"), footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}}})
 }
 
 if (dil == "turkish") {
@@ -24,8 +24,8 @@ if (dil == "turkish") {
   let helpcommands = client.commands.filter(prop => prop.help.category == "admin" && prop.help.name != "help")
   if (helpcommands.length == 0) return message.channel.createMessage(`Bu kategoride hiç komut yok.`)
   let helpcommandsmap = helpcommands.map(p => '<:rightarrow:709539888411836526> **' + prefix + p.help.nametr + '** ' + p.help.descriptiontr + `\n`).join('')
-  if (!db.has(`botcekilis`)) message.channel.createMessage({embed: {title: '__**Yönetici Komutları**__', description: helpcommandsmap, color: colorToSigned24Bit("#2F3136"), footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}}})
-  if (db.has(`botcekilis`)) message.channel.createMessage({embed: {title: '__**Yönetici Komutları**__', description: helpcommandsmap + `\n \n<:rightarrow:709539888411836526> Botta aktif bir çekiliş var!\n**Çekiliş** ${db.fetch(`botcekilis.turkish`)}\n**Katılmak için** ${prefix}çekiliş`, color: colorToSigned24Bit("#2F3136"), footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}}})
+  if (!db.has(`botcekilis`)) message.channel.createMessage({embed: {title: '__**Yönetici Komutları**__', description: helpcommandsmap, color: colorToSignedBit("#2F3136"), footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}}})
+  if (db.has(`botcekilis`)) message.channel.createMessage({embed: {title: '__**Yönetici Komutları**__', description: helpcommandsmap + `\n \n<:rightarrow:709539888411836526> Botta aktif bir çekiliş var!\n**Çekiliş** ${db.fetch(`botcekilis.turkish`)}\n**Katılmak için** ${prefix}çekiliş`, color: colorToSignedBit("#2F3136"), footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}}})
 }
   }
 

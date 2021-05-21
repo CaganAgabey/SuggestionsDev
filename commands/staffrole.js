@@ -3,7 +3,7 @@ const db = require('quick.db');
 
 module.exports.run = async (client, message, args) => {
 
-  function colorToSigned24Bit(s) {
+  function colorToSignedBit(s) {
     return (parseInt(s.substr(1), 16) << 8) / 256;
 }
 
@@ -46,7 +46,7 @@ if (args[0] == "list") {
   if (!db.has(`staffrole_${message.guildID}`) || db.fetch(`staffrole_${message.guildID}`).length == 0) return message.channel.createMessage(`This guild doesn't have any staff role.`)
   const staffroles = db.fetch(`staffrole_${message.guildID}`)
   const rolemap = staffroles.map(r => `<:rightarrow:709539888411836526> <@&` + r + `>\n`).join('')
-  message.channel.createMessage({embed: {title: `__**Staff roles**__`, description: rolemap, footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}, color: colorToSigned24Bit("#2F3136")}})
+  message.channel.createMessage({embed: {title: `__**Staff roles**__`, description: rolemap, footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}, color: colorToSignedBit("#2F3136")}})
 }
 
 if (args[0] != "add" && args[0] != "remove" && args[0] != "list") return message.channel.createMessage(`You must provide a correct option. (\`add\`, \`remove\` or \`list\`)`)
@@ -89,7 +89,7 @@ if (dil == "turkish") {
     if (!db.has(`staffrole_${message.guildID}`) || db.fetch(`staffrole_${message.guildID}`).length == 0) return message.channel.createMessage(`Bu sunucunun hiçbir yetkili rolü yok.`)
     const staffroles = db.fetch(`staffrole_${message.guildID}`)
     const rolemap = staffroles.map(r => `<:rightarrow:709539888411836526> <@&` + r + `>\n`).join('')
-    message.channel.createMessage({embed: {title: `__**Yetkili rolleri**__`, description: rolemap, footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}, color: colorToSigned24Bit("#2F3136")}})
+    message.channel.createMessage({embed: {title: `__**Yetkili rolleri**__`, description: rolemap, footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}, color: colorToSignedBit("#2F3136")}})
   }
   
   if (args[0] != "ekle" && args[0] != "sil" && args[0] != "liste") return message.channel.createMessage(`Doğru bir ayar belirtmelisin. (\`ekle\`, \`sil\` veya \`liste\`)`)

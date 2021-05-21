@@ -3,7 +3,7 @@ const db = require('quick.db');
 
 module.exports.run = async (client, message, args) => {
 
-  function colorToSigned24Bit(s) {
+  function colorToSignedBit(s) {
     return (parseInt(s.substr(1), 16) << 8) / 256;
 }
 
@@ -26,7 +26,7 @@ for (const i of all.slice(0, 15)) {
     if (db.fetch(`${i.ID}.suggestion`).substr(0, 60) == db.fetch(`${i.ID}.suggestion`)) map += `<:rightarrow:709539888411836526> **Suggestion #${i.ID.replace(`suggestion_${message.guildID}_`, '')}** ${db.fetch(`${i.ID}.suggestion`)}\n`
     if (db.fetch(`${i.ID}.suggestion`).substr(0, 60) != db.fetch(`${i.ID}.suggestion`)) map += `<:rightarrow:709539888411836526> **Suggestion #${i.ID.replace(`suggestion_${message.guildID}_`, '')}** ${db.fetch(`${i.ID}.suggestion`).substr(0, 60)}...\n`
 }
-msg.edit({content: 'Suggestions that awaiting review', embed: {title: `__**Suggestions that awaiting review**__`, description: map, color: colorToSigned24Bit("#2F3136"), footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}}})
+msg.edit({content: 'Suggestions that awaiting review', embed: {title: `__**Suggestions that awaiting review**__`, description: map, color: colorToSignedBit("#2F3136"), footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}}})
 }
 })
 }
@@ -48,7 +48,7 @@ msg.edit(`Doğrulama bekleyen herhangi bir öneri yok.`)
         if (db.fetch(`${i.ID}.suggestion`).substr(0, 60) == db.fetch(`${i.ID}.suggestion`)) map += `<:rightarrow:709539888411836526> **Öneri #${i.ID.replace(`suggestion_${message.guildID}_`, '')}** ${db.fetch(`${i.ID}.suggestion`)}\n`
         if (db.fetch(`${i.ID}.suggestion`).substr(0, 60) != db.fetch(`${i.ID}.suggestion`)) map += `<:rightarrow:709539888411836526> **Öneri #${i.ID.replace(`suggestion_${message.guildID}_`, '')}** ${db.fetch(`${i.ID}.suggestion`).substr(0, 60)}...\n`
     }
-    msg.edit({content: 'Doğrulama bekleyen öneriler', embed: {title: `__**Doğrulama bekleyen öneriler**__`, description: map, color: colorToSigned24Bit("#2F3136"), footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}}})
+    msg.edit({content: 'Doğrulama bekleyen öneriler', embed: {title: `__**Doğrulama bekleyen öneriler**__`, description: map, color: colorToSignedBit("#2F3136"), footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}}})
     }
 })
 }

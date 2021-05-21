@@ -3,7 +3,7 @@ const db = require('quick.db');
 
 module.exports.run = async (client, message, args) => {
 
-  function colorToSigned24Bit(s) {
+  function colorToSignedBit(s) {
     return (parseInt(s.substr(1), 16) << 8) / 256;
 }
 
@@ -41,7 +41,7 @@ const sugid = args[0]
 if (!sugid) return message.channel.createMessage(`You must provide a suggestion number to look.`)
 if (!db.has(`suggestion_${message.guildID}_${sugid}`)) return message.channel.createMessage(`Can't find a suggestion with this suggestion number in this guild.`)
 if (!client.guilds.get(message.guildID).channels.get(db.fetch(`suggestionchannel_${message.guildID}`))) return message.channel.createMessage(`This guild's suggestion channel has been deleted, so you can't look suggestions in this guild until admins setting a new suggestion channel.`)
-message.channel.createMessage({embed: {title: `Info of Suggestion #${sugid}`, description: `**Status:** ${db.fetch(`suggestion_${message.guildID}_${sugid}.status`)}\n**Author:** <@${db.fetch(`suggestion_${message.guildID}_${sugid}.author`)}>\n**Sended at:** ${destructMS(Date.now() - db.fetch(`suggestion_${message.guildID}_${sugid}.timestamp`))}\n**Suggestion:** ${db.fetch(`suggestion_${message.guildID}_${sugid}.suggestion`)}`, color: colorToSigned24Bit("#2F3136")}})
+message.channel.createMessage({embed: {title: `Info of Suggestion #${sugid}`, description: `**Status:** ${db.fetch(`suggestion_${message.guildID}_${sugid}.status`)}\n**Author:** <@${db.fetch(`suggestion_${message.guildID}_${sugid}.author`)}>\n**Sended at:** ${destructMS(Date.now() - db.fetch(`suggestion_${message.guildID}_${sugid}.timestamp`))}\n**Suggestion:** ${db.fetch(`suggestion_${message.guildID}_${sugid}.suggestion`)}`, color: colorToSignedBit("#2F3136")}})
 }
 
 if (dil == "turkish") {
@@ -76,7 +76,7 @@ if (dil == "turkish") {
   if (!sugid) return message.channel.createMessage(`Bakmak için bir öneri numarası girmelisin.`)
   if (!db.has(`suggestion_${message.guildID}_${sugid}`)) return message.channel.createMessage(`Bu sunucuda bu öneri numarası ile herhangi bir öneri bulunamadı.`)
   if (!client.guilds.get(message.guildID).channels.get(db.fetch(`suggestionchannel_${message.guildID}`))) return message.channel.createMessage(`Bu sunucunun öneri kanalı silinmiş, bu sebeple yöneticiler yeni bir öneri kanalı seçene kadar önerilere bakamazsın.`)
-  message.channel.createMessage({embed: {title: `Öneri #${sugid} Bilgi`, description: `**Durum:** ${db.fetch(`suggestion_${message.guildID}_${sugid}.status`).replace('awaiting approval', 'doğrulama bekliyor').replace('new', 'yeni').replace('approved', 'onaylanmış').replace('denied', 'reddedilmiş').replace('invalid', 'geçersiz').replace('potentional', 'düşünülecek')}\n**Yazar:** <@${db.fetch(`suggestion_${message.guildID}_${sugid}.author`)}>\n**Gönderildiği zaman:** ${destructMS(Date.now() - db.fetch(`suggestion_${message.guildID}_${sugid}.timestamp`))}\n**Öneri:** ${db.fetch(`suggestion_${message.guildID}_${sugid}.suggestion`)}`, color: colorToSigned24Bit("#2F3136")}})
+  message.channel.createMessage({embed: {title: `Öneri #${sugid} Bilgi`, description: `**Durum:** ${db.fetch(`suggestion_${message.guildID}_${sugid}.status`).replace('awaiting approval', 'doğrulama bekliyor').replace('new', 'yeni').replace('approved', 'onaylanmış').replace('denied', 'reddedilmiş').replace('invalid', 'geçersiz').replace('potentional', 'düşünülecek')}\n**Yazar:** <@${db.fetch(`suggestion_${message.guildID}_${sugid}.author`)}>\n**Gönderildiği zaman:** ${destructMS(Date.now() - db.fetch(`suggestion_${message.guildID}_${sugid}.timestamp`))}\n**Öneri:** ${db.fetch(`suggestion_${message.guildID}_${sugid}.suggestion`)}`, color: colorToSignedBit("#2F3136")}})
   }
 }
 

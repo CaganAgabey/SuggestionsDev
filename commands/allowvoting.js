@@ -3,7 +3,7 @@ const db = require('quick.db');
 
 module.exports.run = async (client, message, args) => {
 	
-	function colorToSigned24Bit(s) {
+	function colorToSignedBit(s) {
 		return (parseInt(s.substr(1), 16) << 8) / 256;
 	}
 	

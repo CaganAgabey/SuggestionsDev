@@ -7,15 +7,14 @@ if (message.author.id != "343412762522812419") return;
 
   if(!args[0]) return
     try {
-        let codein = args.join(" ");
+        const codein = args.join(" ");
         let code = eval(codein);
 
         if (typeof code !== 'string')
             code = require('util').inspect(code, { depth: 0 });
-        let çıkış = (`\`\`\`js\n${code}\n\`\`\``)
-        message.channel.createMessage(çıkış)
+        message.channel.createMessage(`\`\`\`js\n${code}\n\`\`\``)
     } catch(e) {
-        message.channel.createMessage(`\`\`\`js\n${e}\n\`\`\``);
+        message.channel.createMessage(`\`\`\`js\n${e.stack}\n\`\`\``);
     }
 }
 

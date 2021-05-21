@@ -3,7 +3,7 @@ const db = require('quick.db');
 
 module.exports.run = async (client, message, args) => {
 
-  function colorToSigned24Bit(s) {
+  function colorToSignedBit(s) {
     return (parseInt(s.substr(1), 16) << 8) / 256;
 }
 
@@ -20,7 +20,7 @@ if (dil == "english") {
       if (db.fetch(`${i.ID}.users`).includes(user.id)) userbadges += `${db.fetch(`${i.ID}.emoji`)} ${db.fetch(`${i.ID}.text`)}\n`
   }
   if (userbadges == '') userbadges == "Nothing"
-  message.channel.createMessage({embed: {title: `**${user.username}**#${user.discriminator}`, description: `**User ID:** ${user.id}\n**Total sent suggestions:** ${db.all().filter(i => i.ID.startsWith(`suggestion_`) && db.fetch(`${i.ID}.author`) == user.id && db.fetch(`${i.ID}.status`) != "deleted").length}`, thumbnail: {url: user.avatarURL || user.defaultAvatarURL}, fields: [{name: `__**Suggestions badges**__`, value: userbadges || "Nothing"}], color: colorToSigned24Bit("#2F3136"), footer: {text: `Suggestions`, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}}})
+  message.channel.createMessage({embed: {title: `**${user.username}**#${user.discriminator}`, description: `**User ID:** ${user.id}\n**Total sent suggestions:** ${db.all().filter(i => i.ID.startsWith(`suggestion_`) && db.fetch(`${i.ID}.author`) == user.id && db.fetch(`${i.ID}.status`) != "deleted").length}`, thumbnail: {url: user.avatarURL || user.defaultAvatarURL}, fields: [{name: `__**Suggestions badges**__`, value: userbadges || "Nothing"}], color: colorToSignedBit("#2F3136"), footer: {text: `Suggestions`, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}}})
 }
 
 if (dil == "turkish") {
@@ -34,7 +34,7 @@ if (dil == "turkish") {
       if (db.fetch(`${i.ID}.users`).includes(user.id)) userbadges += `${db.fetch(`${i.ID}.emoji`)} ${db.fetch(`${i.ID}.text`)}\n`
   }
   if (userbadges == '') userbadges == "Hiçbir şey"
-  message.channel.createMessage({embed: {title: `**${user.username}**#${user.discriminator}`, description: `**Kullanıcı ID:** ${user.id}\n**Toplam gönderilen öneriler:** ${db.all().filter(i => i.ID.startsWith(`suggestion_`) && db.fetch(`${i.ID}.author`) == user.id && db.fetch(`${i.ID}.status`) != "deleted").length}`, thumbnail: {url: user.avatarURL || user.defaultAvatarURL}, fields: [{name: `__**Suggestions rozetleri**__`, value: userbadges || "Hiçbir şey"}], color: colorToSigned24Bit("#2F3136"), footer: {text: `Suggestions`, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}}})
+  message.channel.createMessage({embed: {title: `**${user.username}**#${user.discriminator}`, description: `**Kullanıcı ID:** ${user.id}\n**Toplam gönderilen öneriler:** ${db.all().filter(i => i.ID.startsWith(`suggestion_`) && db.fetch(`${i.ID}.author`) == user.id && db.fetch(`${i.ID}.status`) != "deleted").length}`, thumbnail: {url: user.avatarURL || user.defaultAvatarURL}, fields: [{name: `__**Suggestions rozetleri**__`, value: userbadges || "Hiçbir şey"}], color: colorToSignedBit("#2F3136"), footer: {text: `Suggestions`, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}}})
 }
 }
 

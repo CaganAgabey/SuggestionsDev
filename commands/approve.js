@@ -1,10 +1,10 @@
 ﻿const Eris = require("eris");
 const db = require('quick.db');
-const { manageSuggestion } = require('../functions')
+const {manageSuggestion} = require('../functions')
 
 module.exports.run = async (client, message, args) => {
   
-  function colorToSigned24Bit(s) {
+  function colorToSignedBit(s) {
     return (parseInt(s.substr(1), 16) << 8) / 256;
   }
   
@@ -48,7 +48,7 @@ module.exports.run = async (client, message, args) => {
               embed: {
                 title: `Öneri #${sugid}`,
                 description: db.fetch(`suggestion_${message.guildID}_${sugid}.suggestion`),
-                color: colorToSigned24Bit("#00FF00"),
+                color: colorToSignedBit("#0F0"),
                 author: {
                   name: `Onaylanmış öneri - ${client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).username}#${client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).discriminator}`,
                   icon_url: client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).avatarURL || client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).defaultAvatarURL
@@ -66,7 +66,7 @@ module.exports.run = async (client, message, args) => {
               embed: {
                 title: `Öneri #${sugid}`,
                 description: db.fetch(`suggestion_${message.guildID}_${sugid}.suggestion`),
-                color: colorToSigned24Bit("#00FF00"),
+                color: colorToSignedBit("#0F0"),
                 author: {
                   name: `Onaylanmış öneri - ${client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).username}#${client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).discriminator}`,
                   icon_url: client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).avatarURL || client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).defaultAvatarURL
@@ -86,7 +86,7 @@ module.exports.run = async (client, message, args) => {
             embed: {
               title: 'Önerin onaylandı!',
               description: `Önerin \`${message.channel.guild.name}\` sunucusunda onaylandı.\n**Öneri:** ${db.fetch(`suggestion_${message.guildID}_${sugid}.suggestion`)}\n**Öneri numarası:** ${sugid}\n**Sebep:** ${args.slice(1).join(' ')}`,
-              color: colorToSigned24Bit("#00FF00")
+              color: colorToSignedBit("#0F0")
             }
           }))
         }
@@ -96,7 +96,7 @@ module.exports.run = async (client, message, args) => {
               embed: {
                 title: `Öneri #${sugid}`,
                 description: db.fetch(`suggestion_${message.guildID}_${sugid}.suggestion`),
-                color: colorToSigned24Bit("#00FF00"),
+                color: colorToSignedBit("#00FF00"),
                 author: {
                   name: `Onaylanmış öneri - ${client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).username}#${client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).discriminator}`,
                   icon_url: client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).avatarURL || client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).defaultAvatarURL
@@ -113,7 +113,7 @@ module.exports.run = async (client, message, args) => {
               embed: {
                 title: `Öneri #${sugid}`,
                 description: db.fetch(`suggestion_${message.guildID}_${sugid}.suggestion`),
-                color: colorToSigned24Bit("#00FF00"),
+                color: colorToSignedBit("#0F0"),
                 author: {
                   name: `Onaylanmış öneri - ${client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).username}#${client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).discriminator}`,
                   icon_url: client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).avatarURL || client.users.find(u => u.id == db.fetch(`suggestion_${message.guildID}_${sugid}.author`)).defaultAvatarURL
@@ -132,7 +132,7 @@ module.exports.run = async (client, message, args) => {
             embed: {
               title: 'Önerin onaylandı!',
               description: `Önerin \`${message.channel.guild.name}\` sunucusunda onaylandı.\n**Öneri:** ${db.fetch(`suggestion_${message.guildID}_${sugid}.suggestion`)}\n**Öneri numarası:** ${sugid}`,
-              color: colorToSigned24Bit("#00FF00")
+              color: colorToSignedBit("#00FF00")
             }
           }))
         }
