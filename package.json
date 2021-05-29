@@ -4,6 +4,7 @@
   "main": "server.js",
   "dependencies": {
     "@discordjs/opus": "^0.5.0",
+    "ark.db": "^2.4.4",
     "bufferutil": "^4.0.3",
     "dblapi.js": "^2.4.0",
     "eris": "^0.15.1",

@@ -1,4 +1,5 @@
-const db = require('quick.db')
+const arkdb = require('ark.db')
+const db = new arkdb.Database()
 const Eris = require("eris");
 
 function colorToSignedBit(s) {
@@ -16,7 +17,7 @@ module.exports = {
 		if (type == "Maybe") color = 16776960
 		let displaytype = type.toLowerCase()
 		if (language == "turkish") {
-			displaytype = type
+			displaytype = displaytype
 			.replace('approved', 'onaylanmış')
 			.replace('denied', 'reddedilmiş')
 			.replace('invalid', 'geçersiz')
@@ -76,16 +77,14 @@ module.exports = {
 					color
 				}
 			})).catch(async e => console.log(`Someone's dm is closed (${e})`))
-			message.addReaction(`✅`)
+			if (message != null) message.addReaction(`✅`)
 		})
 	},
 	deleteSuggestion: async (message, guild, sugid, client, language, args, msgdeleted) => {
 		const data = db.fetch(`suggestion_${guild.id}_${sugid}`);
 		const author = client.users.get(data.author)
 		if (msgdeleted == false) {
-			guild.channels.get(db.fetch(`suggestionchannel_${guild.id}`)).getMessage(data.msgid).then(async msg => {
-				msg.delete()
-			})
+			guild.channels.get(db.fetch(`suggestionchannel_${guild.id}`)).getMessage(data.msgid).then(async msg => msg.delete())
 		}
 		if (message != null) message.addReaction(`✅`)
 		db.set(`suggestion_${guild.id}_${sugid}.status`, 'deleted')

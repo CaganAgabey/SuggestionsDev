@@ -24,5 +24,5 @@ module.exports.help = {
 	descriptiontr: "Öneri gönderme. (Önerinizi direkt öneri kanalına da yazabilirsin)",
 	usageen: "prefix [new prefix]",
 	usagetr: "önek [yeni önek]",
-	category: 'public'
+	category: 'owner'
 }
