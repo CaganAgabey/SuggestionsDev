@@ -10,7 +10,7 @@ const DBL = require('dblapi.js')
 const dbl = new DBL(settings.dbltoken)
 const awaitingsuggestions = new Map()
 const version = "1.0";
-const { manageSuggestion, deleteSuggestion } = require('./functions')
+const {manageSuggestion, deleteSuggestion, sendSuggestion} = require('./functions')
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -56,8 +56,8 @@ client.on("messageCreate", async message => {
   const args = messageArray.slice(1);
   if (!message.guildID) return message.channel.createMessage(`You can't use commands via DMs in this bot. You can only receive suggestion updates via DMs in this bot.`)
   const guildme = client.guilds.get(message.guildID).members.get(client.user.id)
-  if (!guildme.permissions.has('sendMessages')) return message.author.getDMChannel().then(ch => ch.createMessage(`That bot doesn't has send messages permission in this guild.`))
-  if (!guildme.permissions.has('manageMessages')) return message.channel.createMessage(`The bot should have Manage Messages permission in order to work properly.`)
+  if (!guildme.permissions.has('sendMessages')) return message.author.getDMChannel().then(ch => ch.createMessage(`That bot doesn't have send messages permission in this guild.`))
+  if (!guildme.permissions.has('manageMessages') || !guildme.permissions.has('embedLinks') || !guildme.permissions.has('addReactions')) return message.channel.createMessage(`The bot should have Manage Messages, Embed Links and Add Reactions permissions in order to work properly.`)
   let commandfile = client.commands.get(cmd.slice(prefix.length));
   if (!commandfile) commandfile = client.aliases.get(cmd.slice(prefix.length))
   if (commandfile) commandfile.run(client, message, args);
@@ -72,178 +72,8 @@ client.on('messageCreate', async message => {
   const prefix = db.fetch(`prefix_${message.guildID}`) || ".";
   if (message.content.startsWith(prefix)) return;
   const guild = client.guilds.get(message.guildID)
+  sendSuggestion(message, guild, client, dil)
   message.delete()
-  if (dil == "english") {
-    if (db.has(`reviewchannel_${message.guildID}`) && guild.channels.has(db.fetch(`reviewchannel_${message.guildID}`))) {
-      let oldsugssize = db.all().filter(i => i.ID.startsWith(`suggestion_${message.guildID}_`)).length;
-      if (awaitingsuggestions.has(message.guildID) && awaitingsuggestions.get(message.guildID) >= oldsugssize) oldsugssize = awaitingsuggestions.get(message.guildID);
-      awaitingsuggestions.set(message.guildID, oldsugssize + 1)
-      const guild = client.guilds.get(message.guildID);
-      let approveemoji = `👍`
-      if (db.has(`customapprove_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customapprove_${message.guildID}`)) == true) approveemoji = db.fetch(`customapprove_${message.guildID}`)
-      if (db.has(`customapprove_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customapprove_${message.guildID}`)) == false && guild.emojis.filter(x => x.name == db.fetch(`customapprove_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customapprove_${message.guildID}`).split(':')[1]).length != 0) approveemoji = guild.emojis.filter(x => x.name == db.fetch(`customapprove_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customapprove_${message.guildID}`).split(':')[1])[0].name + ":" + guild.emojis.filter(x => x.name == db.fetch(`customapprove_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customapprove_${message.guildID}`).split(':')[1])[0].id
-      let denyemoji = `👎`
-      if (db.has(`customdeny_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customdeny_${message.guildID}`)) == true) denyemoji = db.fetch(`customdeny_${message.guildID}`)
-      if (db.has(`customdeny_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customdeny_${message.guildID}`)) == false && guild.emojis.filter(x => x.name == db.fetch(`customdeny_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customdeny_${message.guildID}`).split(':')[1]).length != 0) denyemoji = guild.emojis.filter(x => x.name == db.fetch(`customdeny_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customdeny_${message.guildID}`).split(':')[1])[0].name + ":" + guild.emojis.filter(x => x.name == db.fetch(`customdeny_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customdeny_${message.guildID}`).split(':')[1])[0].id
-      db.set(`suggestion_${message.guildID}_${oldsugssize + 1}`, {
-        status: 'awaiting approval',
-        author: message.author.id,
-        suggestion: message.content,
-        timestamp: Date.now(),
-        channel: message.channel.id,
-        guild: message.guildID,
-        approveemoji,
-        denyemoji,
-        followers: [ message.author.id ]
-      })
-      message.channel.createMessage(`Successfully sent the suggestion to approval queue! When your suggestion get approved, it will show up here.`).then(async msg =>
-          guild.channels.get(db.fetch(`reviewchannel_${message.guildID}`)).createMessage({
-            embed: {
-              title: `Suggestion #${oldsugssize + 1} (awaiting approval)`,
-              description: message.content.replace(`${prefix}suggest`, '').replace(`${prefix}suggestion`, '').replace(`${prefix}öner`, '').replace(`${prefix}öneri`, ''),
-              color: 4934475,
-              author: {
-                name: `Awaiting suggestion - ${message.author.username}#${message.author.discriminator}`,
-                icon_url: message.author.avatarURL || message.author.defaultAvatarURL
-              },
-              footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}
-            }
-          }).then(async msgg => {
-            msgg.addReaction(`✅`)
-            await sleep(75)
-            msgg.addReaction(`❌`)
-            db.set(`suggestion_${message.guildID}_${oldsugssize + 1}.msgid`, msgg.id)
-            await sleep(9000)
-            msg.delete()
-          }))
-      return
-    }
-    let oldsugssize = db.all().filter(i => i.ID.startsWith(`suggestion_${message.guildID}_`)).length;
-    if (awaitingsuggestions.has(message.guildID) && awaitingsuggestions.get(message.guildID) >= oldsugssize) oldsugssize = awaitingsuggestions.get(message.guildID);
-    awaitingsuggestions.set(message.guildID, oldsugssize + 1)
-    const guild = client.guilds.get(message.guildID);
-    let approveemoji = `👍`
-    if (db.has(`customapprove_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customapprove_${message.guildID}`)) == true) approveemoji = db.fetch(`customapprove_${message.guildID}`)
-    if (db.has(`customapprove_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customapprove_${message.guildID}`)) == false && guild.emojis.filter(x => x.name == db.fetch(`customapprove_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customapprove_${message.guildID}`).split(':')[1]).length != 0) approveemoji = guild.emojis.filter(x => x.name == db.fetch(`customapprove_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customapprove_${message.guildID}`).split(':')[1])[0].name + ":" + guild.emojis.filter(x => x.name == db.fetch(`customapprove_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customapprove_${message.guildID}`).split(':')[1])[0].id
-    let denyemoji = `👎`
-    if (db.has(`customdeny_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customdeny_${message.guildID}`)) == true) denyemoji = db.fetch(`customdeny_${message.guildID}`)
-    if (db.has(`customdeny_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customdeny_${message.guildID}`)) == false && guild.emojis.filter(x => x.name == db.fetch(`customdeny_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customdeny_${message.guildID}`).split(':')[1]).length != 0) denyemoji = guild.emojis.filter(x => x.name == db.fetch(`customdeny_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customdeny_${message.guildID}`).split(':')[1])[0].name + ":" + guild.emojis.filter(x => x.name == db.fetch(`customdeny_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customdeny_${message.guildID}`).split(':')[1])[0].id
-    message.channel.createMessage({
-      embed: {
-        title: `Suggestion #${oldsugssize + 1}`,
-        description: message.content.replace(`${prefix}suggest`, '').replace(`${prefix}suggestion`, '').replace(`${prefix}öner`, '').replace(`${prefix}öneri`, ''),
-        color: colorToSignedBit("#00FFFF"),
-        author: {
-          name: `New suggestion - ${message.author.username}#${message.author.discriminator}`,
-          icon_url: message.author.avatarURL || message.author.defaultAvatarURL
-        },
-        footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}
-      }
-    }).then(async msg => {
-      db.set(`suggestion_${message.guildID}_${oldsugssize + 1}`, {
-        status: 'new',
-        msgid: msg.id,
-        author: message.author.id,
-        suggestion: message.content,
-        timestamp: Date.now(),
-        channel: message.channel.id,
-        guild: message.guildID,
-        approveemoji,
-        denyemoji,
-        followers: [ message.author.id ]
-      })
-      if (!db.has(`denyvoting_${message.guildID}`)) {
-        msg.addReaction(approveemoji)
-        await sleep(75)
-        msg.addReaction(denyemoji)
-      }
-    })
-  }
-  
-  if (dil == "turkish") {
-    if (db.has(`reviewchannel_${message.guildID}`) && guild.channels.has(db.fetch(`reviewchannel_${message.guildID}`))) {
-      let oldsugssize = db.all().filter(i => i.ID.startsWith(`suggestion_${message.guildID}_`)).length;
-      if (awaitingsuggestions.has(message.guildID) && awaitingsuggestions.get(message.guildID) >= oldsugssize) oldsugssize = awaitingsuggestions.get(message.guildID);
-      awaitingsuggestions.set(message.guildID, oldsugssize + 1)
-      const guild = client.guilds.get(message.guildID);
-      let approveemoji = `👍`
-      if (db.has(`customapprove_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customapprove_${message.guildID}`)) == true) approveemoji = db.fetch(`customapprove_${message.guildID}`)
-      if (db.has(`customapprove_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customapprove_${message.guildID}`)) == false && guild.emojis.filter(x => x.name == db.fetch(`customapprove_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customapprove_${message.guildID}`).split(':')[1]).length != 0) approveemoji = guild.emojis.filter(x => x.name == db.fetch(`customapprove_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customapprove_${message.guildID}`).split(':')[1])[0].name + ":" + guild.emojis.filter(x => x.name == db.fetch(`customapprove_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customapprove_${message.guildID}`).split(':')[1])[0].id
-      let denyemoji = `👎`
-      if (db.has(`customdeny_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customdeny_${message.guildID}`)) == true) denyemoji = db.fetch(`customdeny_${message.guildID}`)
-      if (db.has(`customdeny_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customdeny_${message.guildID}`)) == false && guild.emojis.filter(x => x.name == db.fetch(`customdeny_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customdeny_${message.guildID}`).split(':')[1]).length != 0) denyemoji = guild.emojis.filter(x => x.name == db.fetch(`customdeny_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customdeny_${message.guildID}`).split(':')[1])[0].name + ":" + guild.emojis.filter(x => x.name == db.fetch(`customdeny_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customdeny_${message.guildID}`).split(':')[1])[0].id
-      db.set(`suggestion_${message.guildID}_${oldsugssize + 1}`, {
-        status: 'awaiting approval',
-        author: message.author.id,
-        suggestion: message.content,
-        timestamp: Date.now(),
-        channel: message.channel.id,
-        guild: message.guildID,
-        approveemoji,
-        denyemoji,
-        followers: [ message.author.id ]
-      })
-      message.channel.createMessage(`Öneri başarıyla doğrulama sırasına gönderildi! Önerin onaylandığında, bu kanalda gözükecektir.`).then(async msg =>
-          guild.channels.get(db.fetch(`reviewchannel_${message.guildID}`)).createMessage({
-            embed: {
-              title: `Öneri #${oldsugssize + 1} (doğrulama bekliyor)`,
-              description: message.content.replace(`${prefix}suggest`, '').replace(`${prefix}suggestion`, '').replace(`${prefix}öner`, '').replace(`${prefix}öneri`, ''),
-              color: 4934475,
-              author: {
-                name: `Bekleyen öneri - ${message.author.username}#${message.author.discriminator}`,
-                icon_url: message.author.avatarURL || message.author.defaultAvatarURL
-              },
-              footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}
-            }
-          }).then(async msgg => {
-            msgg.addReaction(`✅`)
-            msgg.addReaction(`❌`)
-            db.set(`suggestion_${message.guildID}_${oldsugssize + 1}.msgid`, msgg.id)
-            await sleep(9000)
-            msg.delete()
-          }))
-      return
-    }
-    let oldsugssize = db.all().filter(i => i.ID.startsWith(`suggestion_${message.guildID}_`)).length;
-    if (awaitingsuggestions.has(message.guildID) && awaitingsuggestions.get(message.guildID) >= oldsugssize) oldsugssize = awaitingsuggestions.get(message.guildID);
-    awaitingsuggestions.set(message.guildID, oldsugssize + 1)
-    const guild = client.guilds.get(message.guildID);
-    let approveemoji = `👍`
-    if (db.has(`customapprove_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customapprove_${message.guildID}`)) == true) approveemoji = db.fetch(`customapprove_${message.guildID}`)
-    if (db.has(`customapprove_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customapprove_${message.guildID}`)) == false && guild.emojis.filter(x => x.name == db.fetch(`customapprove_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customapprove_${message.guildID}`).split(':')[1]).length != 0) approveemoji = guild.emojis.filter(x => x.name == db.fetch(`customapprove_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customapprove_${message.guildID}`).split(':')[1])[0].name + ":" + guild.emojis.filter(x => x.name == db.fetch(`customapprove_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customapprove_${message.guildID}`).split(':')[1])[0].id
-    let denyemoji = `👎`
-    if (db.has(`customdeny_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customdeny_${message.guildID}`)) == true) denyemoji = db.fetch(`customdeny_${message.guildID}`)
-    if (db.has(`customdeny_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customdeny_${message.guildID}`)) == false && guild.emojis.filter(x => x.name == db.fetch(`customdeny_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customdeny_${message.guildID}`).split(':')[1]).length != 0) denyemoji = guild.emojis.filter(x => x.name == db.fetch(`customdeny_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customdeny_${message.guildID}`).split(':')[1])[0].name + ":" + guild.emojis.filter(x => x.name == db.fetch(`customdeny_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customdeny_${message.guildID}`).split(':')[1])[0].id
-    message.channel.createMessage({
-      embed: {
-        title: `Öneri #${oldsugssize + 1}`,
-        description: message.content.replace(`${prefix}suggest`, '').replace(`${prefix}suggestion`, '').replace(`${prefix}öner`, '').replace(`${prefix}öneri`, ''),
-        color: colorToSignedBit("#00FFFF"),
-        author: {
-          name: `Yeni öneri - ${message.author.username}#${message.author.discriminator}`,
-          icon_url: message.author.avatarURL || message.author.defaultAvatarURL
-        },
-        footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}
-      }
-    }).then(async msg => {
-      db.set(`suggestion_${message.guildID}_${oldsugssize + 1}`, {
-        status: 'new',
-        msgid: msg.id,
-        author: message.author.id,
-        suggestion: message.content.replace(`${prefix}suggest`, '').replace(`${prefix}suggestion`, '').replace(`${prefix}öner`, '').replace(`${prefix}öneri`, ''),
-        timestamp: Date.now(),
-        channel: message.channel.id,
-        guild: message.guildID,
-        approveemoji,
-        denyemoji,
-        followers: [ message.author.id ]
-      })
-      if (!db.has(`denyvoting_${message.guildID}`)) {
-        msg.addReaction(approveemoji)
-        msg.addReaction(denyemoji)
-      }
-    })
-  }
 })
 
 client.on('guildCreate', async guild => {
@@ -278,11 +108,11 @@ client.on('guildCreate', async guild => {
         }
       })
     }
-  }else channel = channels[0]
+  } else channel = channels[0]
   channel.createMessage({
     embed: {
       title: '**__Thanks for adding Suggestions bot!__**',
-      description: `This bot allows you to manage your suggestions in server easily. You can see the possible commands with **.help** command. This bot won't work if you don't set any suggestion channel.\n \n**You can get help about the bot setup** With **.setupinfo** command.\n \n**This bot made by** ${client.users.get('343412762522812419').username}#${client.users.get('343412762522812419').discriminator}\n \n**If you have any cool idea for bot** Use **.botsuggest** command to send suggestions to owner.\n \n**Note:** In order to work properly, bot should have manage messages permission.\n**Note for Turkish:** Eğer botu Türkçe kullanmak istiyorsanız \`.language turkish\` komuduyla botu Türkçe yapabilirsiniz, Türkçe yaptıktan sonra \`.kurulumbilgi\` ile bilgi alabilirsiniz`,
+      description: `This bot allows you to manage your suggestions in server easily. You can see the possible commands with **.help** command. This bot won't work if you don't set any suggestion channel.\n \n**You can get help about the bot setup** With **.setupinfo** command.\n \n**This bot made by** ${client.users.get('343412762522812419').username}#${client.users.get('343412762522812419').discriminator}\n \n**If you have any cool idea for bot** Use **.botsuggest** command to send suggestions to owner.\n \n**Note:** In order to work properly, bot should have Manage Messages, Embed Links and Add Reactions permission.\n**Note for Turkish:** Eğer botu Türkçe kullanmak istiyorsanız \`.language turkish\` komuduyla botu Türkçe yapabilirsiniz, Türkçe yaptıktan sonra \`.kurulumbilgi\` ile bilgi alabilirsiniz`,
       color: colorToSignedBit("#2F3136"),
       author: {name: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL},
       footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}
@@ -337,7 +167,7 @@ client.on('messageReactionAdd', async (message, emoji, userID) => {
               embed: {
                 title: `Suggestion #${sugid}`,
                 description: db.fetch(`suggestion_${guild.id}_${sugid}.suggestion`),
-                color: colorToSignedBit("#00FFFF"),
+                color: colorToSignedBit("#0FF"),
                 author: {
                   name: `New suggestion - ${client.users.get(db.fetch(`suggestion_${guild.id}_${sugid}.author`)).username}#${client.users.get(db.fetch(`suggestion_${guild.id}_${sugid}.author`)).discriminator}`,
                   icon_url: client.users.get(db.fetch(`suggestion_${guild.id}_${sugid}.author`)).avatarURL || client.users.get(db.fetch(`suggestion_${guild.id}_${sugid}.author`)).defaultAvatarURL
@@ -376,7 +206,7 @@ client.on('messageReactionAdd', async (message, emoji, userID) => {
               embed: {
                 title: `Öneri #${sugid}`,
                 description: db.fetch(`suggestion_${guild.id}_${sugid}.suggestion`),
-                color: colorToSignedBit("#00FFFF"),
+                color: colorToSignedBit("#0FF"),
                 author: {
                   name: `Yeni öneri - ${client.users.get(db.fetch(`suggestion_${guild.id}_${sugid}.author`)).username}#${client.users.get(db.fetch(`suggestion_${guild.id}_${sugid}.author`)).discriminator}`,
                   icon_url: client.users.get(db.fetch(`suggestion_${guild.id}_${sugid}.author`)).avatarURL || client.users.get(db.fetch(`suggestion_${guild.id}_${sugid}.author`)).defaultAvatarURL
