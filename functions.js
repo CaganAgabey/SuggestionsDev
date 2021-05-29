@@ -75,8 +75,12 @@ module.exports = {
 				if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
 					embed: {
 						title: `Followed suggestion has ${type.toLowerCase()}!`,
-						description: `Followed suggestion that in \`${guild.name}\` has ${type.toLowerCase()}.\n**Suggestion number:** ${sugid}${args[1] ? `\n**Staff comment:** ${args.slice(1).join(' ')}` : ``}\n**Suggestion:** \`\`\`${data.suggestion}\`\`\`\nYou can disable these DMs with using \`.senddm\` command in a guild.`,
-						color
+						description: `Followed suggestion that in \`${guild.name}\` has ${type.toLowerCase()}.\n**Suggestion number:** \`#${sugid}\`\n**Suggestion author:** ${author.username}#${author.discriminator}${args[1] ? `\n**Staff comment:** ${args.slice(1).join(' ')}` : ``}\n**Suggestion:** \`\`\`${data.suggestion}\`\`\``,
+						color,
+						footer: {
+							text: `You can disable these DMs with using .senddm command in a guild.`,
+							icon_url: client.user.avatarURL || client.user.defaultAvatarURL
+						}
 					}
 				})).catch(async e => console.log(`Someone's dm is closed (${e})`))
 			}
@@ -96,8 +100,12 @@ module.exports = {
 			if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
 				embed: {
 					title: 'Followed suggestion has deleted!',
-					description: `Followed suggestion that in \`${guild.name}\` has deleted.\n**Suggestion number:** ${sugid}${args[1] ? `\n**Staff comment:** ${args.slice(1).join(' ')}` : ``}\n**Suggestion:** \`\`\`${data.suggestion}\`\`\`\nYou can disable these DMs with using \`.senddm\` command in a guild.`,
-					color: colorToSignedBit("#000000")
+					description: `Followed suggestion that in \`${guild.name}\` has deleted.\n**Suggestion number:** \`#${sugid}\`\n**Suggestion author:** ${author.username}#${author.discriminator}${args[1] ? `\n**Staff comment:** ${args.slice(1).join(' ')}` : ``}\n**Suggestion:** \`\`\`${data.suggestion}\`\`\``,
+					color: colorToSignedBit("#000000"),
+					footer: {
+						text: `You can disable these DMs with using .senddm command in a guild.`,
+						icon_url: client.user.avatarURL || client.user.defaultAvatarURL
+					}
 				}
 			})).catch(async e => console.log(`Someone's dm is closed (${e})`))
 		}
@@ -190,5 +198,78 @@ module.exports = {
 				}
 			})
 		}
+	},
+	
+	verifySuggestion: async (message, guild, client, language) => {
+		const sugid = Number(message.embeds[0].title.replace('Suggestion #', '').replace(' (awaiting approval)', '').replace('Öneri #', '').replace(' (doğrulama bekliyor)', ''))
+		const author = client.users.get(db.fetch(`suggestion_${guild.id}_${sugid}.author`))
+		const approveemoji = db.fetch(`suggestion_${guild.id}_${sugid}.approveemoji`);
+		const denyemoji = db.fetch(`suggestion_${guild.id}_${sugid}.denyemoji`);
+		guild.channels.get(db.fetch(`suggestionchannel_${guild.id}`)).createMessage({
+			embed: {
+				title: language == "english" ? `Suggestion #${sugid}` : `Öneri #${sugid}`,
+				description: db.fetch(`suggestion_${guild.id}_${sugid}.suggestion`),
+				color: colorToSignedBit("#0FF"),
+				author: {
+					name: `${language == "english" ? `New suggestion` : `Yeni öneri`} - ${author.username}#${author.discriminator}`,
+					icon_url: author.avatarURL || author.defaultAvatarURL
+				},
+				footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}
+			}
+		}).then(async msgg => {
+			db.set(`suggestion_${guild.id}_${sugid}.msgid`, msgg.id)
+			db.set(`suggestion_${guild.id}_${sugid}.status`, 'new')
+			if (!db.has(`denyvoting_${guild.id}`)) {
+				msgg.addReaction(approveemoji)
+				msgg.addReaction(denyemoji)
+			}
+			message.delete()
+			for (const id of db.fetch(`suggestion_${guild.id}_${sugid}.followers`)) {
+				if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
+					embed: {
+						title: 'Followed suggestion has verified!',
+						description: `Followed suggestion that in \`${guild.name}\` has verified. It will be shown in suggestions channel now.\n**Suggestion number: \`#${sugid}\`\n**Suggestion author:** ${author.username}#${author.discriminator}\n**Suggestion:** \`\`\`${db.fetch(`suggestion_${guild.id}_${sugid}.suggestion`)}\`\`\``,
+						color: 6579300,
+						footer: {
+							text: `You can disable these DMs with using .senddm command in a guild.`,
+							icon_url: client.user.avatarURL || client.user.defaultAvatarURL
+						}
+					}
+				}))
+			}
+		})
+	},
+	
+	attachImage: async (message, guild, sugid, image, client, language) => {
+		const author = client.users.get(db.fetch(`suggestion_${guild.id}_${sugid}.author`))
+		guild.channels.get(db.fetch(`suggestion_${guild.id}_${sugid}.channel`)).getMessage(db.fetch(`suggestion_${guild.id}_${sugid}.msgid`)).then(async msg => {
+			msg.edit({
+				embed: {
+					title: msg.embeds[0].title,
+					description: msg.embeds[0].description,
+					color: msg.embeds[0].color,
+					author: msg.embeds[0].author,
+					footer: msg.embeds[0].footer,
+					fields: msg.embeds[0].fields,
+					image: {url: typeof image == "string" ? image : image.url}
+				}
+			})
+			db.set(`suggestion_${guild.id}_${sugid}.attachment`, typeof image == "string" ? image : image.url)
+			if (message != null) message.addReaction(`✅`)
+			for (const id of db.fetch(`suggestion_${guild.id}_${sugid}.followers`)) {
+				if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
+					embed: {
+						title: 'An image attached to a followed suggestion!',
+						description: `An image attached to followed suggestion that in \`${guild.name}\`.\n**Suggestion number: \`#${sugid}\`\n**Suggestion author:** ${author.username}#${author.discriminator}\n**Suggestion:** \`\`\`${db.fetch(`suggestion_${guild.id}_${sugid}.suggestion`)}\`\`\``,
+						color: 6579300,
+						footer: {
+							text: `You can disable these DMs with using .senddm command in a guild.`,
+							icon_url: client.user.avatarURL || client.user.defaultAvatarURL
+						},
+						image: {url: typeof image == "string" ? image : image.url}
+					}
+				}))
+			}
+		})
 	}
 }

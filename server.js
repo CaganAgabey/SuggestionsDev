@@ -10,7 +10,7 @@ const DBL = require('dblapi.js')
 const dbl = new DBL(settings.dbltoken)
 const awaitingsuggestions = new Map()
 const version = "1.0";
-const {manageSuggestion, deleteSuggestion, sendSuggestion} = require('./functions')
+const {manageSuggestion, deleteSuggestion, sendSuggestion, verifySuggestion} = require('./functions')
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -51,7 +51,7 @@ client.on("messageCreate", async message => {
   if (message.author.bot) return;
   const prefix = message.guildID ? db.fetch(`prefix_${message.guildID}`) || "." : ".";
   if (!message.content.startsWith(prefix)) return;
-  const messageArray = message.content.replaceAll('  ', ' ').split(" ");
+  const messageArray = message.content.split('  ').join(' ').split(" ");
   const cmd = messageArray[0];
   const args = messageArray.slice(1);
   if (!message.guildID) return message.channel.createMessage(`You can't use commands via DMs in this bot. You can only receive suggestion updates via DMs in this bot.`)
@@ -112,7 +112,7 @@ client.on('guildCreate', async guild => {
   channel.createMessage({
     embed: {
       title: '**__Thanks for adding Suggestions bot!__**',
-      description: `This bot allows you to manage your suggestions in server easily. You can see the possible commands with **.help** command. This bot won't work if you don't set any suggestion channel.\n \n**You can get help about the bot setup** With **.setupinfo** command.\n \n**This bot made by** ${client.users.get('343412762522812419').username}#${client.users.get('343412762522812419').discriminator}\n \n**If you have any cool idea for bot** Use **.botsuggest** command to send suggestions to owner.\n \n**Note:** In order to work properly, bot should have Manage Messages, Embed Links and Add Reactions permission.\n**Note for Turkish:** Eğer botu Türkçe kullanmak istiyorsanız \`.language turkish\` komuduyla botu Türkçe yapabilirsiniz, Türkçe yaptıktan sonra \`.kurulumbilgi\` ile bilgi alabilirsiniz`,
+      description: `This bot allows you to manage your suggestions in server easily. You can see the possible commands with **.help** command.\nYou can get information about usage with **.information** command.\nThis bot won't work if you don't set any suggestion channel.\n \n**You can get help about the bot setup** With **.setupinfo** command.\n \n**This bot made by** ${client.users.get('343412762522812419').username}#${client.users.get('343412762522812419').discriminator}\n \n**If you have any cool idea for bot** Use **.botsuggest** command to send suggestions to owner.\n \n**Note:** In order to work properly, bot should have Manage Messages, Embed Links and Add Reactions permission.\n**Note for Turkish:** Eğer botu Türkçe kullanmak istiyorsanız \`.language turkish\` komuduyla botu Türkçe yapabilirsiniz, Türkçe yaptıktan sonra \`.kurulumbilgi\` ile bilgi alabilirsiniz`,
       color: colorToSignedBit("#2F3136"),
       author: {name: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL},
       footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}
@@ -146,104 +146,25 @@ client.on('messageReactionAdd', async (message, emoji, user) => {
 })
 
 client.on('messageReactionAdd', async (message, emoji, userID) => {
+  if (!db.has(`reviewchannel_${message.guildID}`)) return;
   if (client.users.get(userID.id).bot) return;
   const dil = db.fetch(`dil_${message.guildID}`) || "english";
-  const guild = client.guilds.find(gc => gc.channels.has(message.channel.id))
-  if (db.has(`reviewchannel_${guild.id}`) && db.fetch(`reviewchannel_${guild.id}`) == message.channel.id) {
+  const guild = client.guilds.get(message.guildID)
+  if (!db.has(`staffrole_${guild.id}`) && !guild.members.get(userID.id).permissions.has('manageMessages')) return;
+  if (db.has(`staffrole_${guild.id}`) && !guild.members.get(userID.id).roles.some(r => db.fetch(`staffrole_${guild.id}`).includes(r)) && !guild.members.get(userID.id).permissions.has('administrator')) return;
+  if (db.fetch(`reviewchannel_${guild.id}`) == message.channel.id) {
     guild.channels.get(message.channel.id).getMessage(message.id).then(async msg => {
       msg.getReaction(`✅`).then(async rec => {
-        if (!db.has(`staffrole_${guild.id}`) && !guild.members.get(userID.id).permissions.has('manageMessages')) return;
-        if (db.has(`staffrole_${guild.id}`) && !guild.members.get(userID.id).roles.some(r => db.fetch(`staffrole_${msg.guildID}`).includes(r)) && !guild.members.get(userID.id).permissions.has('administrator')) return;
         if (rec.length - 1 >= 1) {
-          if (dil == "english") {
-            const sugid = msg.embeds[0].title.replace('Suggestion #', '').replace(' (awaiting approval)', '').replace('Öneri #', '').replace(' (doğrulama bekliyor)', '')
-            let approveemoji = `👍`
-            if (db.has(`customapprove_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customapprove_${message.guildID}`)) == true) approveemoji = db.fetch(`customapprove_${message.guildID}`)
-            if (db.has(`customapprove_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customapprove_${message.guildID}`)) == false && msg.channel.guild.emojis.filter(x => x.name == db.fetch(`customapprove_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customapprove_${message.guildID}`).split(':')[1]).length != 0) approveemoji = msg.channel.guild.emojis.filter(x => x.name == db.fetch(`customapprove_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customapprove_${message.guildID}`).split(':')[1])[0].name + ":" + msg.channel.guild.emojis.filter(x => x.name == db.fetch(`customapprove_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customapprove_${message.guildID}`).split(':')[1])[0].id
-            let denyemoji = `👎`
-            if (db.has(`customdeny_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customdeny_${message.guildID}`)) == true) denyemoji = db.fetch(`customdeny_${message.guildID}`)
-            if (db.has(`customdeny_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customdeny_${message.guildID}`)) == false && msg.channel.guild.emojis.filter(x => x.name == db.fetch(`customdeny_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customdeny_${message.guildID}`).split(':')[1]).length != 0) denyemoji = msg.channel.guild.emojis.filter(x => x.name == db.fetch(`customdeny_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customdeny_${message.guildID}`).split(':')[1])[0].name + ":" + msg.channel.guild.emojis.filter(x => x.name == db.fetch(`customdeny_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customdeny_${message.guildID}`).split(':')[1])[0].id
-            guild.channels.get(db.fetch(`suggestionchannel_${guild.id}`)).createMessage({
-              embed: {
-                title: `Suggestion #${sugid}`,
-                description: db.fetch(`suggestion_${guild.id}_${sugid}.suggestion`),
-                color: colorToSignedBit("#0FF"),
-                author: {
-                  name: `New suggestion - ${client.users.get(db.fetch(`suggestion_${guild.id}_${sugid}.author`)).username}#${client.users.get(db.fetch(`suggestion_${guild.id}_${sugid}.author`)).discriminator}`,
-                  icon_url: client.users.get(db.fetch(`suggestion_${guild.id}_${sugid}.author`)).avatarURL || client.users.get(db.fetch(`suggestion_${guild.id}_${sugid}.author`)).defaultAvatarURL
-                },
-                footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}
-              }
-            }).then(async msgg => {
-              db.set(`suggestion_${guild.id}_${sugid}.msgid`, msgg.id)
-              db.set(`suggestion_${guild.id}_${sugid}.status`, 'new')
-              db.set(`suggestion_${guild.id}_${sugid}.approveemoji`, approveemoji)
-              db.set(`suggestion_${guild.id}_${sugid}.denyemoji`, denyemoji)
-              
-              if (!db.has(`denyvoting_${guild.id}`)) {
-                msgg.addReaction(approveemoji)
-                msgg.addReaction(denyemoji)
-              }
-              msg.delete()
-              if (!db.has(`denydm_${db.fetch(`suggestion_${message.guildID}_${sugid}.author`)}`)) client.users.get(db.fetch(`suggestion_${msg.guildID}_${sugid}.author`)).getDMChannel().then(async ch => ch.createMessage({
-                embed: {
-                  title: 'Your suggestion has verified!',
-                  description: `Your suggestion that in \`${msg.channel.guild.name}\` has verified.\n**Suggestion:** ${db.fetch(`suggestion_${msg.guildID}_${sugid}.suggestion`)}\n**Suggestion number:** ${sugid}`,
-                  color: 6579300
-                }
-              }))
-            })
-          }
-          if (dil == "turkish") {
-            const sugid = msg.embeds[0].title.replace('Suggestion #', '').replace(' (awaiting approval)', '').replace('Öneri #', '').replace(' (doğrulama bekliyor)', '')
-            let approveemoji = `👍`
-            if (db.has(`customapprove_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customapprove_${message.guildID}`)) == true) approveemoji = db.fetch(`customapprove_${message.guildID}`)
-            if (db.has(`customapprove_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customapprove_${message.guildID}`)) == false && msg.channel.guild.emojis.filter(x => x.name == db.fetch(`customapprove_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customapprove_${message.guildID}`).split(':')[1]).length != 0) approveemoji = msg.channel.guild.emojis.filter(x => x.name == db.fetch(`customapprove_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customapprove_${message.guildID}`).split(':')[1])[0].name + ":" + msg.channel.guild.emojis.filter(x => x.name == db.fetch(`customapprove_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customapprove_${message.guildID}`).split(':')[1])[0].id
-            let denyemoji = `👎`
-            if (db.has(`customdeny_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customdeny_${message.guildID}`)) == true) denyemoji = db.fetch(`customdeny_${message.guildID}`)
-            if (db.has(`customdeny_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customdeny_${message.guildID}`)) == false && msg.channel.guild.emojis.filter(x => x.name == db.fetch(`customdeny_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customdeny_${message.guildID}`).split(':')[1]).length != 0) denyemoji = msg.channel.guild.emojis.filter(x => x.name == db.fetch(`customdeny_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customdeny_${message.guildID}`).split(':')[1])[0].name + ":" + msg.channel.guild.emojis.filter(x => x.name == db.fetch(`customdeny_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customdeny_${message.guildID}`).split(':')[1])[0].id
-            guild.channels.get(db.fetch(`suggestionchannel_${guild.id}`)).createMessage({
-              embed: {
-                title: `Öneri #${sugid}`,
-                description: db.fetch(`suggestion_${guild.id}_${sugid}.suggestion`),
-                color: colorToSignedBit("#0FF"),
-                author: {
-                  name: `Yeni öneri - ${client.users.get(db.fetch(`suggestion_${guild.id}_${sugid}.author`)).username}#${client.users.get(db.fetch(`suggestion_${guild.id}_${sugid}.author`)).discriminator}`,
-                  icon_url: client.users.get(db.fetch(`suggestion_${guild.id}_${sugid}.author`)).avatarURL || client.users.get(db.fetch(`suggestion_${guild.id}_${sugid}.author`)).defaultAvatarURL
-                },
-                footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}
-              }
-            }).then(async msgg => {
-              db.set(`suggestion_${guild.id}_${sugid}.msgid`, msgg.id)
-              db.set(`suggestion_${guild.id}_${sugid}.status`, 'new')
-              db.set(`suggestion_${guild.id}_${sugid}.approveemoji`, approveemoji)
-              db.set(`suggestion_${guild.id}_${sugid}.denyemoji`, denyemoji)
-              if (!db.has(`denyvoting_${guild.id}`)) {
-                msgg.addReaction(approveemoji)
-                msgg.addReaction(denyemoji)
-              }
-              msg.delete()
-              if (!db.has(`denydm_${db.fetch(`suggestion_${message.guildID}_${sugid}.author`)}`)) client.users.get(db.fetch(`suggestion_${msg.guildID}_${sugid}.author`)).getDMChannel().then(async ch => ch.createMessage({
-                embed: {
-                  title: 'Önerin doğrulandı!',
-                  description: `\`${msg.channel.guild.name}\` sunucusundaki önerin doğrulandı.\n**Öneri:** ${db.fetch(`suggestion_${msg.guildID}_${sugid}.suggestion`)}\n**Öneri numarası:** ${sugid}`,
-                  color: 6579300
-                }
-              }))
-            })
-          }
+          verifySuggestion(msg, msg.channel.guild, client, dil)
+        }else{
+          msg.getReaction(`❌`).then(async rec => {
+            if (rec.length - 1 >= 1) {
+              deleteSuggestion(null, msg.channel.guild, Number(msg.embeds[0].title.replace(`Öneri #`, ``).replace(`Suggestion #`, ``)), client, dil, [], false)
+            }
+          })
         }
       })
-      
-      if (msg) {
-        msg.getReaction(`❌`).then(async rec => {
-          if (!db.has(`staffrole_${guild.id}`) && !guild.members.get(userID.id).permissions.has('manageMessages')) return;
-          if (db.has(`staffrole_${guild.id}`) && !guild.members.get(userID.id).roles.some(r => db.fetch(`staffrole_${msg.guildID}`).includes(r)) && !guild.members.get(userID.id).permissions.has('administrator')) return;
-          if (rec.length - 1 >= 1) {
-            deleteSuggestion(null, msg.channel.guild, Number(msg.embeds[0].title.replace(`Öneri #`, ``).replace(`Suggestion #`, ``)), client, dil, [], false)
-          }
-        })
-      }
     })
   }
 })

@@ -8,7 +8,7 @@ module.exports.run = async (client, message, args) => {
 		return (parseInt(s.substr(1), 16) << 8) / 256;
 	}
 	
-	let dil = db.fetch(`dil_${message.guildID}`) || "english";
+	const dil = db.fetch(`dil_${message.guildID}`) || "english";
 	
 	if (dil == "english") {
 		
