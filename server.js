@@ -68,6 +68,7 @@ client.on('messageCreate', async message => {
   if (!message.guildID) return;
   if (!db.has(`suggestionchannel_${message.guildID}`)) return;
   if (db.fetch(`suggestionchannel_${message.guildID}`) != message.channel.id) return;
+  if (db.has(`disablemessagechannel_${message.author.id}`)) return;
   const dil = db.fetch(`dil_${message.guildID}`) || "english";
   const prefix = db.fetch(`prefix_${message.guildID}`) || ".";
   if (message.content.startsWith(prefix)) return;

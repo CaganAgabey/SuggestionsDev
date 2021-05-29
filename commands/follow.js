@@ -19,6 +19,7 @@ module.exports.run = async (client, message, args) => {
 		if (db.fetch(`suggestion_${message.guildID}_${sugid}.status`) == "deleted") return message.channel.createMessage(`This suggestion has deleted!`)
 		if (!client.guilds.get(message.guildID).channels.get(db.fetch(`suggestionchannel_${message.guildID}`))) return message.channel.createMessage(`This guild's suggestion channel has been deleted, so you can't follow suggestions in this guild until admins setting a new suggestion channel.`)
 		if (db.has(`denydm_${message.author.id}`)) return message.channel.createMessage(`You must allow DMs with \`${prefix}senddm\` before following.`)
+		if (db.fetch(`suggestion_${message.guildID}_${sugid}.followers`).includes(message.author.id)) return message.channel.createMessage(`You are already following this suggestion.`)
 		db.push(`suggestion_${message.guildID}_${sugid}.followers`, message.author.id)
 		message.channel.createMessage(`Successfully followed this suggestion! You can unfollow it with \`${prefix}unfollow ${sugid}\` command.`)
 	}
@@ -31,6 +32,7 @@ module.exports.run = async (client, message, args) => {
 		if (db.fetch(`suggestion_${message.guildID}_${sugid}.status`) == "deleted") return message.channel.createMessage(`Bu öneri silinmiş!`)
 		if (!client.guilds.get(message.guildID).channels.get(db.fetch(`suggestionchannel_${message.guildID}`))) return message.channel.createMessage(`Bu sunucunun öneri kanalı silinmiş, bu sebeple sunucu yöneticileri yeni bir kanal belirlemeden önerileri takip edemezsin.`)
 		if (db.has(`denydm_${message.author.id}`)) return message.channel.createMessage(`Takip etmeden önce \`${prefix}dmgönder\` komuduyla mesaj göndermeye izin vermelisin.`)
+		if (db.fetch(`suggestion_${message.guildID}_${sugid}.followers`).includes(message.author.id)) return message.channel.createMessage(`Bu öneriyi zaten takip ediyorsun.`)
 		db.push(`suggestion_${message.guildID}_${sugid}.followers`, message.author.id)
 		message.channel.createMessage(`Bu öneri başarıyla takip edildi! Dilersen bu öneriyi \`${prefix}unfollow ${sugid}\` komuduyla takipten çıkabilirsin.`)
 	}

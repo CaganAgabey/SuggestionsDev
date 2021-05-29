@@ -1,5 +1,6 @@
 const Eris = require("eris");
-const db = require('quick.db');
+const arkdb = require('ark.db');
+const db = new arkdb.Database()
 const {deleteSuggestion} = require('../functions')
 
 module.exports.run = async (client, message, args) => {

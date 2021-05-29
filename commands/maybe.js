@@ -1,5 +1,6 @@
 ﻿const Eris = require("eris");
-const db = require('quick.db');
+const arkdb = require('ark.db');
+const db = new arkdb.Database()
 const {manageSuggestion} = require('../functions')
 
 module.exports.run = async (client, message, args) => {
@@ -21,7 +22,7 @@ module.exports.run = async (client, message, args) => {
 		if (!client.guilds.get(message.guildID).channels.get(db.fetch(`suggestionchannel_${message.guildID}`))) return message.channel.createMessage(`This guild's suggestion channel has been deleted, so you can't handle suggestions in this guild until setting a new suggestion channel.`)
 		if (db.fetch(`suggestion_${message.guildID}_${sugid}.status`) == "awaiting approval") return message.channel.createMessage(`You must verify or delete this suggestion in review channel using emojis before using this command.`)
 		if (db.fetch(`suggestion_${message.guildID}_${sugid}.status`) == "deleted") return message.channel.createMessage(`This suggestion was deleted!`)
-		manageSuggestion(message, message.channel.guild, sugid, 'maybe', client, dil, args)
+		manageSuggestion(message, message.channel.guild, sugid, 'Maybe', client, dil, args)
 	}
 	
 	if (dil == "turkish") {
@@ -35,7 +36,7 @@ module.exports.run = async (client, message, args) => {
 		if (!client.guilds.get(message.guildID).channels.get(db.fetch(`suggestionchannel_${message.guildID}`))) return message.channel.createMessage(`Bu sunucunun öneri kanalı silinmiş, bu sebeple yeni bir öneri kanalı seçmeden önerileri yönetemezsin.`)
 		if (db.fetch(`suggestion_${message.guildID}_${sugid}.status`) == "awaiting approval") return message.channel.createMessage(`Bu komudu kullanmadan önce öneriyi doğrulama kanalında emojiler ile doğrulamalısın veya silmelisin.`)
 		if (db.fetch(`suggestion_${message.guildID}_${sugid}.status`) == "deleted") return message.channel.createMessage(`Bu öneri silinmiş!`)
-		manageSuggestion(message, message.channel.guild, sugid, 'maybe', client, dil, args)
+		manageSuggestion(message, message.channel.guild, sugid, 'Maybe', client, dil, args)
 	}
 }
 

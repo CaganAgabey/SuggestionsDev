@@ -1,5 +1,6 @@
 const Eris = require("eris");
-const db = require('quick.db')
+const arkdb = require('ark.db');
+const db = new arkdb.Database()
 
 exports.run = async (client, message, args) => {
   
