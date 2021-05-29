@@ -1,10 +1,9 @@
 const Eris = require("eris");
 const arkdb = require('ark.db');
-const db = new arkdb.Database()
 const {sendSuggestion} = require('../functions')
 
 module.exports.run = async (client, message, args) => {
-	
+	const db = client.db
 	function colorToSignedBit(s) {
 		return (parseInt(s.substr(1), 16) << 8) / 256;
 	}
@@ -18,7 +17,8 @@ module.exports.run = async (client, message, args) => {
 		if (db.has(`denysuggestcommand_${message.guildID}`)) return message.channel.createMessage(`Suggest command disabled in this server, so you must send your suggestion as a plain message to the server's suggestion channel.`)
 		if (!args[0]) return message.channel.createMessage(`You must provide a suggestion.`)
 		if (message.channel.id == db.fetch(`suggestionchannel_${guild.id}`)) message.delete()
-		sendSuggestion(args.join(" "), guild, client, dil)
+		sendSuggestion(message, guild, client, dil)
+		message.channel.createMessage({content: `Got it!`, messageReference: {channelID: message.channel.id, messageID: message.id, guildID: message.guildID, failIfNotExists: false}})
 	}
 	
 	if (dil == "turkish") {
@@ -27,7 +27,8 @@ module.exports.run = async (client, message, args) => {
 		if (db.has(`denysuggestcommand_${message.guildID}`)) return message.channel.createMessage(`Bu sunucuda önerme komudu kullanıma engellenmiş, önerini sunucunun öneri kanalına düz mesaj olarak yazmalısın.`)
 		if (!args[0]) return message.channel.createMessage(`Bir öneri belirtmelisin.`)
 		if (message.channel.id == db.fetch(`suggestionchannel_${guild.id}`)) message.delete()
-		sendSuggestion(args.join(" "), guild, client, dil)
+		sendSuggestion(message, guild, client, dil)
+		message.channel.createMessage({content: `Anlaşıldı!`, messageReference: {channelID: message.channel.id, messageID: message.id, guildID: message.guildID, failIfNotExists: false}})
 	}
 }
 

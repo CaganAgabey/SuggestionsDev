@@ -11,6 +11,7 @@ const dbl = new DBL(settings.dbltoken)
 const awaitingsuggestions = new Map()
 const version = "1.0";
 const {manageSuggestion, deleteSuggestion, sendSuggestion, verifySuggestion} = require('./functions')
+client.db = db
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -43,8 +44,8 @@ fs.readdir("./commands/", async (err, files) => {
 
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.username}!`);
-  client.editStatus("online", {name: `.help | .information (v${version})`, type: 5})
-  setInterval(async () => dbl.postStats(client.guilds.size), 600000)
+  client.editStatus("online", {name: `.help | .invite (v${version})`, type: 5})
+  //setInterval(async () => dbl.postStats(client.guilds.size), 600000)
 });
 
 client.on("messageCreate", async message => {
@@ -113,7 +114,7 @@ client.on('guildCreate', async guild => {
   channel.createMessage({
     embed: {
       title: '**__Thanks for adding Suggestions bot!__**',
-      description: `This bot allows you to manage your suggestions in server easily. You can see the possible commands with **.help** command.\nYou can get information about usage with **.information** command.\nThis bot won't work if you don't set any suggestion channel.\n \n**You can get help about the bot setup** With **.setupinfo** command.\n \n**This bot made by** ${client.users.get('343412762522812419').username}#${client.users.get('343412762522812419').discriminator}\n \n**If you have any cool idea for bot** Use **.botsuggest** command to send suggestions to owner.\n \n**Note:** In order to work properly, bot should have Manage Messages, Embed Links and Add Reactions permission.\n**Note for Turkish:** Eğer botu Türkçe kullanmak istiyorsanız \`.language turkish\` komuduyla botu Türkçe yapabilirsiniz, Türkçe yaptıktan sonra \`.kurulumbilgi\` ile bilgi alabilirsiniz`,
+      description: `This bot allows you to manage your suggestions in server easily. You can see the possible commands with **.help** command.\nThis bot won't work if you don't set any suggestion channel.\n \n**You can get help about the bot setup** With **.setupinfo** command.\n \n**This bot made by** ${client.users.get('343412762522812419').username}#${client.users.get('343412762522812419').discriminator}\n \n**If you have any cool idea for bot** Use **.botsuggest** command to send suggestions to owner.\n \n**Note:** In order to work properly, bot should have Manage Messages, Embed Links and Add Reactions permission.\n**Note for Turkish:** Eğer botu Türkçe kullanmak istiyorsanız \`.language turkish\` komuduyla botu Türkçe yapabilirsiniz, Türkçe yaptıktan sonra \`.kurulumbilgi\` ile bilgi alabilirsiniz`,
       color: colorToSignedBit("#2F3136"),
       author: {name: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL},
       footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}
@@ -124,24 +125,37 @@ client.on('guildCreate', async guild => {
 client.on('messageReactionAdd', async (message, emoji, user) => {
   if (client.users.get(user.id).bot) return;
   if (!message.guildID) return;
+  if (!db.has(`suggestionchannel_${message.guildID}`)) return;
   if (db.has(`suggestionchannel_${message.guildID}`) && db.fetch(`suggestionchannel_${message.guildID}`) != message.channel.id) return;
-  if (!db.has(`autoapprove_${message.guildID}`) && !db.has(`autodeny_${message.guildID}`)) return;
-  if (db.all().filter(x => x.ID.startsWith(`suggestion_${message.guildID}_`) && db.fetch(`${x.ID}.msgid`) == message.id).length == 0) return;
-  const sugname = db.all().filter(x => x.ID.startsWith(`suggestion_${message.guildID}_`) && db.fetch(`${x.ID}.msgid`) == message.id)[0].ID
   client.guilds.get(message.guildID).channels.get(message.channel.id).getMessage(message.id).then(async msg => {
+    const sugname = `suggestion_${message.guildID}_${msg.embeds[0].title.split(`#`)[1]}`
+    if (!db.has(sugname)) return;
     const dil = db.fetch(`dil_${msg.guildID}`) || "english";
     const sugid = Number(msg.embeds[0].title.replace('Suggestion #', '').replace('Öneri #', ''))
     msg.getReaction(db.fetch(`${sugname}.approveemoji`)).then(async rec => {
-      if (!db.has(`autoapprove_${msg.guildID}`)) return;
-      if (rec.length - 1 >= db.fetch(`autoapprove_${msg.guildID}`)) {
+      if (db.has(`autoapprove_${msg.guildID}`) && rec.length - 1 >= db.fetch(`autoapprove_${msg.guildID}`)) {
         manageSuggestion(null, msg.channel.guild, sugid, 'Approved', client, dil, [])
       }
-    })
-    msg.getReaction(db.fetch(`${sugname}.denyemoji`)).then(async rec => {
-      if (!db.has(`autodeny_${msg.guildID}`)) return;
-      if (rec.length - 1 >= db.fetch(`autodeny_${msg.guildID}`)) {
-        manageSuggestion(null, msg.channel.guild, sugid, 'Denied', client, dil, [])
-      }
+      msg.getReaction(db.fetch(`${sugname}.denyemoji`)).then(async recc => {
+        if (db.has(`ownervoting_${message.guildID}`) && rec.filter(x => x.id == db.fetch(`${sugname}.author`)).length != 0) {
+          msg.removeReaction(db.fetch(`${sugname}.approveemoji`), db.fetch(`${sugname}.author`))
+          client.users.get(user.id).getDMChannel().then(async ch => ch.createMessage(`You can't vote to your suggestion in this server.`))
+        }
+        if (db.has(`ownervoting_${message.guildID}`) && recc.filter(x => x.id == db.fetch(`${sugname}.author`)).length != 0) {
+          msg.removeReaction(db.fetch(`${sugname}.denyemoji`), db.fetch(`${sugname}.author`))
+          client.users.get(user.id).getDMChannel().then(async ch => ch.createMessage(`You can't vote to your suggestion in this server.`))
+        }
+        if (db.has(`multiplevoting_${message.guildID}`) && rec.filter(x => x.id == user.id).length != 0) {
+          if (recc.filter(x => x.id == user.id).length != 0) {
+            msg.removeReaction(db.fetch(`${sugname}.approveemoji`), user.id)
+            msg.removeReaction(db.fetch(`${sugname}.denyemoji`), user.id)
+            client.users.get(user.id).getDMChannel().then(async ch => ch.createMessage(`Multiple voting is not allowed in this server. You must vote in only one reaction.`))
+          }
+        }
+        if (db.has(`autodeny_${msg.guildID}`) && recc.length - 1 >= db.fetch(`autodeny_${msg.guildID}`)) {
+          manageSuggestion(null, msg.channel.guild, sugid, 'Denied', client, dil, [])
+        }
+      })
     })
   })
 })
@@ -172,10 +186,10 @@ client.on('messageReactionAdd', async (message, emoji, userID) => {
 
 client.on('messageDelete', async message => {
   await sleep(1000)
-  const all = db.all().filter(i => i.ID.startsWith(`suggestion_`) && db.fetch(`${i.ID}.msgid`) == message.id)
-  if (all.length != 0) {
-    for (const i of all) {
-      deleteSuggestion(null, client.guilds.get(db.fetch(`${i.ID}.guild`)), Number(i.ID.split('_')[2]), client, 'english', [], true)
+  const map = new Map(Object.entries(db.all()));
+  for (const i of map.keys()) {
+    if (i.startsWith(`suggestion_${message.guildID}_`) && db.fetch(`${i}.msgid`) == message.id) {
+      deleteSuggestion(null, client.guilds.get(db.fetch(`${i}.guild`)), Number(i.split('_')[2]), client, 'english', [], true)
     }
   }
 })

@@ -1,9 +1,8 @@
 const Eris = require("eris");
 const arkdb = require('ark.db');
-const db = new arkdb.Database()
 
 module.exports.run = async (client, message, args) => {
-	
+	const db = client.db
 	function colorToSignedBit(s) {
 		return (parseInt(s.substr(1), 16) << 8) / 256;
 	}
@@ -45,6 +44,12 @@ module.exports.run = async (client, message, args) => {
         let allowmessagingchannel;
         if (db.has(`disablemessagechannel_${message.guildID}`)) allowmessagingchannel = "False"
         if (!db.has(`disablemessagechannel_${message.guildID}`)) allowmessagingchannel = "True"
+		let ownervoting;
+		if (db.has(`ownervoting_${message.guildID}`)) ownervoting = "False"
+		if (!db.has(`ownervoting_${message.guildID}`)) ownervoting = "True"
+		let multiplevoting;
+		if (db.has(`multiplevoting_${message.guildID}`)) multiplevoting = "False"
+		if (!db.has(`multiplevoting_${message.guildID}`)) multiplevoting = "True"
 		let customapprove;
 		if (db.has(`customapprove_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customapprove_${message.guildID}`)) == true) customapprove = db.fetch(`customapprove_${message.guildID}`)
 		if (db.has(`customapprove_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customapprove_${message.guildID}`)) == false) customapprove = '<:' + db.fetch(`customapprove_${message.guildID}`).split(':')[0] + ':' + db.fetch(`customapprove_${message.guildID}`).split(':')[1] + '>'
@@ -62,7 +67,7 @@ module.exports.run = async (client, message, args) => {
 		message.channel.createMessage({
 			embed: {
 				title: `__**Config**__`,
-				description: `**Suggestions channel:** ${suggestionchannel}\n**Suggestion review channel:** ${reviewchannel}\n \n**Approved suggestions channel:** ${approvedchannel}\n**Denied suggestions channel:** ${deniedchannel}\n**Invalid suggestions channel:** ${invalidchannel}\n**Potential suggestions channel:** ${potentialchannel}\n \n**Allow vote on suggestions:** ${allowvoting}\n**Allow suggest command:** ${allowsuggestcommand}\n**Allow messaging to suggestion channel to send suggestion:** ${allowmessagingchannel}\n \n**Approve emoji:** ${customapprove}\n**Deny emoji:** ${customdeny}\n \n**Auto approve count:** ${autoapprove}\n**Auto deny count:** ${autodeny}\n \n**__Staff roles__**\n${staffroles}\n \n**Prefix:** ${prefix}`,
+				description: `**Suggestions channel:** ${suggestionchannel}\n**Suggestion review channel:** ${reviewchannel}\n \n**Approved suggestions channel:** ${approvedchannel}\n**Denied suggestions channel:** ${deniedchannel}\n**Invalid suggestions channel:** ${invalidchannel}\n**Potential suggestions channel:** ${potentialchannel}\n \n**Allow vote on suggestions:** ${allowvoting}\n**Allow suggest command:** ${allowsuggestcommand}\n**Allow messaging to suggestion channel to send suggestion:** ${allowmessagingchannel}\n**Allow multiple voting:** ${multiplevoting}\n**Allow self voting:** ${ownervoting}\n \n**Approve emoji:** ${customapprove}\n**Deny emoji:** ${customdeny}\n \n**Auto approve count:** ${autoapprove}\n**Auto deny count:** ${autodeny}\n \n**__Staff roles__**\n${staffroles}\n \n**Prefix:** ${prefix}`,
 				color: colorToSignedBit("#2F3136")
 			}
 		})
@@ -103,6 +108,12 @@ module.exports.run = async (client, message, args) => {
         let allowmessagingchannel;
         if (db.has(`disablemessagechannel_${message.guildID}`)) allowmessagingchannel = "Kapalı"
         if (!db.has(`disablemessagechannel_${message.guildID}`)) allowmessagingchannel = "Açık"
+		let ownervoting;
+		if (db.has(`ownervoting_${message.guildID}`)) ownervoting = "False"
+		if (!db.has(`ownervoting_${message.guildID}`)) ownervoting = "True"
+		let multiplevoting;
+		if (db.has(`multiplevoting_${message.guildID}`)) multiplevoting = "False"
+		if (!db.has(`multiplevoting_${message.guildID}`)) multiplevoting = "True"
 		let customapprove;
 		if (db.has(`customapprove_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customapprove_${message.guildID}`)) == true) customapprove = db.fetch(`customapprove_${message.guildID}`)
 		if (db.has(`customapprove_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customapprove_${message.guildID}`)) == false) customapprove = '<:' + db.fetch(`customapprove_${message.guildID}`).split(':')[0] + ':' + db.fetch(`customapprove_${message.guildID}`).split(':')[1] + '>'
@@ -120,7 +131,7 @@ module.exports.run = async (client, message, args) => {
 		message.channel.createMessage({
 			embed: {
 				title: `__**Ayarlamalar**__`,
-				description: `**Öneri kanalı:** ${suggestionchannel}\n**Öneri doğrulama kanalı:** ${reviewchannel}\n \n**Onaylanmış öneri kanalı:** ${approvedchannel}\n**Reddedilmiş öneri kanalı:** ${deniedchannel}\n**Geçersiz öneri kanalı:** ${invalidchannel}\n**Düşünülecek öneri kanalı:** ${potentialchannel}\n \n**Önerilerde oylama:** ${allowvoting}\n**Öner komudunu kullanma:** ${allowsuggestcommand}\n**Öneri göndermek için öneri kanalına mesaj atma:** ${allowmessagingchannel}\n \n**Onay emojisi:** ${customapprove}\n**Red emojisi:** ${customdeny}\n \n**Otomatik onay sayısı:** ${autoapprove}\n**Otomatik red sayısı:** ${autodeny}\n \n**__Yetkili rolleri__**\n${staffroles}\n \n**Önek:** ${prefix}`,
+				description: `**Öneri kanalı:** ${suggestionchannel}\n**Öneri doğrulama kanalı:** ${reviewchannel}\n \n**Onaylanmış öneri kanalı:** ${approvedchannel}\n**Reddedilmiş öneri kanalı:** ${deniedchannel}\n**Geçersiz öneri kanalı:** ${invalidchannel}\n**Düşünülecek öneri kanalı:** ${potentialchannel}\n \n**Önerilerde oylama:** ${allowvoting}\n**Öner komudunu kullanma:** ${allowsuggestcommand}\n**Öneri göndermek için öneri kanalına mesaj atma:** ${allowmessagingchannel}\n**Çoklu oylama:** ${multiplevoting}\n**Kendi önerini oylama:** ${ownervoting}\n \n**Onay emojisi:** ${customapprove}\n**Red emojisi:** ${customdeny}\n \n**Otomatik onay sayısı:** ${autoapprove}\n**Otomatik red sayısı:** ${autodeny}\n \n**__Yetkili rolleri__**\n${staffroles}\n \n**Önek:** ${prefix}`,
 				color: colorToSignedBit("#2F3136")
 			}
 		})

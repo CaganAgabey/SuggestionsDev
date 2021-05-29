@@ -1,5 +1,4 @@
 const arkdb = require('ark.db')
-const db = new arkdb.Database()
 const Eris = require("eris");
 const awaitingsuggestions = new Map()
 
@@ -7,8 +6,13 @@ function colorToSignedBit(s) {
 	return (parseInt(s.substr(1), 16) << 8) / 256;
 }
 
+function sleep(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 module.exports = {
 	manageSuggestion: async (message, guild, sugid, type, client, language, args) => {
+		const db = client.db
 		const data = db.fetch(`suggestion_${guild.id}_${sugid}`);
 		const author = client.users.get(data.author)
 		let color = colorToSignedBit("#00FF00")
@@ -89,6 +93,7 @@ module.exports = {
 	},
 	
 	deleteSuggestion: async (message, guild, sugid, client, language, args, msgdeleted) => {
+		const db = client.db
 		const data = db.fetch(`suggestion_${guild.id}_${sugid}`);
 		const author = client.users.get(data.author)
 		if (msgdeleted == false) {
@@ -112,39 +117,44 @@ module.exports = {
 	},
 	
 	sendSuggestion: async (message, guild, client, language) => {
-		const guildme = client.guilds.get(message.guildID).members.get(client.user.id)
+		const db = client.db
+		const guildme = client.guilds.get(guild.id).members.get(client.user.id)
 		if (!guildme.permissions.has('sendMessages')) return message.author.getDMChannel().then(ch => ch.createMessage(`That bot doesn't have send messages permission in this guild.`))
 		if (!guildme.permissions.has('manageMessages') || !guildme.permissions.has('embedLinks') || !guildme.permissions.has('addReactions')) return message.channel.createMessage(`The bot should have Manage Messages, Embed Links and Add Reactions permissions in order to work properly.`)
-		let oldsugssize = db.all().filter(i => i.ID.startsWith(`suggestion_${message.guildID}_`)).length;
-		if (awaitingsuggestions.has(message.guildID) && awaitingsuggestions.get(message.guildID) >= oldsugssize) oldsugssize = awaitingsuggestions.get(message.guildID);
-		awaitingsuggestions.set(message.guildID, oldsugssize + 1)
+		const map = new Map(Object.entries(db.all()));
+		let oldsugssize = 0
+		for (const i of map.keys()) {
+			if (i.startsWith(`suggestion_${guild.id}_`)) oldsugssize++
+		}
+		if (awaitingsuggestions.has(guild.id) && awaitingsuggestions.get(guild.id) >= oldsugssize) oldsugssize = awaitingsuggestions.get(guild.id);
+		awaitingsuggestions.set(guild.id, oldsugssize + 1)
 		let approveemoji = `👍`
-		if (db.has(`customapprove_${message.guildID}`)) {
-			if (/\p{Emoji}/u.test(db.fetch(`customapprove_${message.guildID}`)) == true) approveemoji = db.fetch(`customapprove_${message.guildID}`)
-			else if (guild.emojis.filter(x => x.name == db.fetch(`customapprove_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customapprove_${message.guildID}`).split(':')[1]).length != 0) approveemoji = db.fetch(`customapprove_${message.guildID}`)
+		if (db.has(`customapprove_${guild.id}`)) {
+			if (/\p{Emoji}/u.test(db.fetch(`customapprove_${guild.id}`)) == true) approveemoji = db.fetch(`customapprove_${guild.id}`)
+			else if (guild.emojis.filter(x => x.name == db.fetch(`customapprove_${guild.id}`).split(':')[0] && x.id == db.fetch(`customapprove_${guild.id}`).split(':')[1]).length != 0) approveemoji = db.fetch(`customapprove_${guild.id}`)
 		}
 		let denyemoji = `👎`
-		if (db.has(`customdeny_${message.guildID}`)) {
-			if (/\p{Emoji}/u.test(db.fetch(`customdeny_${message.guildID}`)) == true) approveemoji = db.fetch(`customdeny_${message.guildID}`)
-			else if (guild.emojis.filter(x => x.name == db.fetch(`customdeny_${message.guildID}`).split(':')[0] && x.id == db.fetch(`customdeny_${message.guildID}`).split(':')[1]).length != 0) denyemoji = db.fetch(`customdeny_${message.guildID}`)
+		if (db.has(`customdeny_${guild.id}`)) {
+			if (/\p{Emoji}/u.test(db.fetch(`customdeny_${guild.id}`)) == true) approveemoji = db.fetch(`customdeny_${guild.id}`)
+			else if (guild.emojis.filter(x => x.name == db.fetch(`customdeny_${guild.id}`).split(':')[0] && x.id == db.fetch(`customdeny_${guild.id}`).split(':')[1]).length != 0) denyemoji = db.fetch(`customdeny_${guild.id}`)
 		}
-		if (db.has(`reviewchannel_${message.guildID}`) && guild.channels.has(db.fetch(`reviewchannel_${message.guildID}`))) {
-			db.set(`suggestion_${message.guildID}_${oldsugssize + 1}`, {
+		if (db.has(`reviewchannel_${guild.id}`) && guild.channels.has(db.fetch(`reviewchannel_${guild.id}`))) {
+			db.set(`suggestion_${guild.id}_${oldsugssize + 1}`, {
 				status: 'awaiting approval',
 				author: message.author.id,
-				suggestion: message.content,
+				suggestion: message.content.split(' ').slice(1).join(" "),
 				timestamp: Date.now(),
-				channel: db.fetch(`reviewchannel_${message.guildID}`),
-				guild: message.guildID,
+				channel: db.fetch(`reviewchannel_${guild.id}`),
+				guild: guild.id,
 				approveemoji,
 				denyemoji,
 				followers: [ message.author.id ]
 			})
 			message.channel.createMessage( language == "english" ? `Successfully sent the suggestion to approval queue! When your suggestion get verified, it will show up here.` : `Öneri başarıyla doğrulama sırasına gönderildi! Önerin doğrulandığında, bu kanalda gözükecektir.`).then(async msg =>
-				guild.channels.get(db.fetch(`reviewchannel_${message.guildID}`)).createMessage({
+				guild.channels.get(db.fetch(`reviewchannel_${guild.id}`)).createMessage({
 					embed: {
 						title: `Suggestion #${oldsugssize + 1}`,
-						description: message.content,
+						description: message.content.split(' ').slice(1).join(" "),
 						color: 4934475,
 						author: {
 							name: `${language == "english" ? `Awaiting suggestion` : `Bekleyen öneri`} - ${message.author.username}#${message.author.discriminator}`,
@@ -156,19 +166,18 @@ module.exports = {
 						}
 					}
 				}).then(async msgg => {
-					db.set(`suggestion_${message.guildID}_${oldsugssize + 1}.msgid`, msgg.id)
+					db.set(`suggestion_${guild.id}_${oldsugssize + 1}.msgid`, msgg.id)
 					msgg.addReaction(`✅`)
-					await sleep(75)
 					msgg.addReaction(`❌`)
-					await sleep(9000)
+					await sleep(5000)
 					msg.delete()
 				}))
 		} else {
-			message.channel.createMessage({
+			guild.channels.get(db.fetch(`suggestionchannel_${guild.id}`)).createMessage({
 				embed: {
 					title: language == "english" ? `Suggestion #${oldsugssize + 1}` : `Öneri #${oldsugssize + 1}`,
-					description: message.content,
-					color: colorToSignedBit("#0FF"),
+					description: message.content.split(' ').slice(1).join(" "),
+					color: colorToSignedBit("#00FFFF"),
 					author: {
 						name: `${language == "english" ? `New suggestion` : `Yeni öneri`} - ${message.author.username}#${message.author.discriminator}`,
 						icon_url: message.author.avatarURL || message.author.defaultAvatarURL
@@ -179,21 +188,20 @@ module.exports = {
 					}
 				}
 			}).then(async msg => {
-				db.set(`suggestion_${message.guildID}_${oldsugssize + 1}`, {
+				db.set(`suggestion_${guild.id}_${oldsugssize + 1}`, {
 					status: 'new',
 					msgid: msg.id,
 					author: message.author.id,
-					suggestion: message.content,
+					suggestion: message.content.split(' ').slice(1).join(" "),
 					timestamp: Date.now(),
 					channel: db.fetch(`suggestionchannel_${guild.id}`),
-					guild: message.guildID,
+					guild: guild.id,
 					approveemoji,
 					denyemoji,
 					followers: [ message.author.id ]
 				})
-				if (!db.has(`denyvoting_${message.guildID}`)) {
+				if (!db.has(`denyvoting_${guild.id}`)) {
 					msg.addReaction(approveemoji)
-					await sleep(75)
 					msg.addReaction(denyemoji)
 				}
 			})
@@ -201,6 +209,7 @@ module.exports = {
 	},
 	
 	verifySuggestion: async (message, guild, client, language) => {
+		const db = client.db
 		const sugid = Number(message.embeds[0].title.replace('Suggestion #', '').replace(' (awaiting approval)', '').replace('Öneri #', '').replace(' (doğrulama bekliyor)', ''))
 		const author = client.users.get(db.fetch(`suggestion_${guild.id}_${sugid}.author`))
 		const approveemoji = db.fetch(`suggestion_${guild.id}_${sugid}.approveemoji`);
@@ -209,7 +218,7 @@ module.exports = {
 			embed: {
 				title: language == "english" ? `Suggestion #${sugid}` : `Öneri #${sugid}`,
 				description: db.fetch(`suggestion_${guild.id}_${sugid}.suggestion`),
-				color: colorToSignedBit("#0FF"),
+				color: colorToSignedBit("#00FFFF"),
 				author: {
 					name: `${language == "english" ? `New suggestion` : `Yeni öneri`} - ${author.username}#${author.discriminator}`,
 					icon_url: author.avatarURL || author.defaultAvatarURL
@@ -241,6 +250,7 @@ module.exports = {
 	},
 	
 	attachImage: async (message, guild, sugid, image, client, language) => {
+		const db = client.db
 		const author = client.users.get(db.fetch(`suggestion_${guild.id}_${sugid}.author`))
 		guild.channels.get(db.fetch(`suggestion_${guild.id}_${sugid}.channel`)).getMessage(db.fetch(`suggestion_${guild.id}_${sugid}.msgid`)).then(async msg => {
 			msg.edit({

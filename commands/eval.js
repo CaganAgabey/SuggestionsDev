@@ -1,9 +1,8 @@
 const Eris = require("eris");
 const arkdb = require('ark.db');
-const db = new arkdb.Database()
 
 exports.run = async (client, message, args) => {
-  
+    const db = client.db
 if (message.author.id != "343412762522812419") return;
 
   if(!args[0]) return

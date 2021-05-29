@@ -1,10 +1,9 @@
 ﻿const Eris = require("eris");
 const arkdb = require('ark.db');
-const db = new arkdb.Database()
 const {manageSuggestion} = require('../functions')
 
 module.exports.run = async (client, message, args) => {
-	
+	const db = client.db
 	function colorToSignedBit(s) {
 		return (parseInt(s.substr(1), 16) << 8) / 256;
 	}
