@@ -94,5 +94,5 @@ module.exports.help = {
 	descriptiontr: "Öneri gönderme.",
 	usageen: "prefix [new prefix]",
 	usagetr: "önek [yeni önek]",
-	category: 'owner'
+	category: 'public'
 }
