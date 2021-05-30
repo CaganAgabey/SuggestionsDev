@@ -39,8 +39,8 @@ module.exports.help = {
 	name: "allowsuggestcommand",
 	nametr: "önerikomudunukullanma",
 	aliase: [ "önerikomudunukullanma", "önerkomudunukullanma", "önerikomudunukullan", "önerkomudunukullan", "suggestcommand" ],
-	descriptionen: "Sets your members can use suggest command without messaging to suggestion channel or not. (default: true)",
-	descriptiontr: "Üyelerinizin öneri kanalına mesaj atmadan öner komuduyla öneri atıp atamayacağını seçer. (normali: evet)",
+	descriptionen: "Sets your members can use suggest command without messaging to suggestion channel or not.",
+	descriptiontr: "Üyelerinizin öneri kanalına mesaj atmadan öner komuduyla öneri atıp atamayacağını seçer.",
 	usageen: "allowvote",
 	usagetr: "önek [yeni önek]",
 	category: 'admin'

@@ -38,7 +38,7 @@ module.exports.run = async (client, message, args) => {
 module.exports.help = {
 	name: "messagingsuggestionchannel",
 	nametr: "önerikanalınamesajgönderme",
-	aliase: [ "önerikanalınamesajgönderme", "önerikanalınamesajgönder" ],
+	aliase: [ "önerikanalınamesajgönderme", "önerikanalınamesajgönder", "sendmessagetosuggestionchannel" ],
 	descriptionen: "Sets your members can send suggestion with messaging to suggestion channel or not. (default: true)",
 	descriptiontr: "Üyelerinizin öneri kanalına mesaj atarak öneri gönderebilmesini veya gönderememesini seçer. (normali: evet)",
 	usageen: "allowvote",

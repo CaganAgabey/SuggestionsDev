@@ -58,7 +58,7 @@ module.exports.help = {
   name: "invalidchannel",
   nametr: "geçersizönerikanalı",
   aliase: ["invalidschannel", "geçersizkanal", "geçersizönerikanalı", "geçersizönerikanal"],
-  descriptionen: "Sets a channel to send invalid suggestions. (write delete to delete invalid channel)",
+  descriptionen: "Sets a channel to send invalid suggestions. (write delete to reset)",
   descriptiontr: "Geçersiz önerileri göndermek için bir kanal seçer. (silmek için sil yaz)",
   usageen: "setchannel [channel name, mention or id]",
   usagetr: "önerikanal [kanal ismi, etiketi veya idsi]",

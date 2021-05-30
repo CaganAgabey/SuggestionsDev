@@ -58,7 +58,7 @@ module.exports.help = {
 	name: "approvedchannel",
 	nametr: "onaylanmışönerikanal",
 	aliase: [ "approvechannel", "onaylanankanal", "onaylanmışönerikanal", "onaylanmışönerikanalı" ],
-	descriptionen: "Sets a channel to send approved suggestions. (write delete to delete approved channel)",
+	descriptionen: "Sets a channel to send approved suggestions. (write delete to reset)",
 	descriptiontr: "Onaylanmış önerileri göndermek için bir kanal seçer. (silmek için sil yazın)",
 	usageen: "setchannel [channel name, mention or id]",
 	usagetr: "önerikanal [kanal ismi, etiketi veya idsi]",

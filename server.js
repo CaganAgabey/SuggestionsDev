@@ -42,10 +42,10 @@ fs.readdir("./commands/", async (err, files) => {
   console.log("All commands have been loaded successfully.")
 });
 
-client.on('ready', () => {
+client.once('ready', async () => {
   console.log(`Logged in as ${client.user.username}!`);
   client.editStatus("online", {name: `.help | .invite (v${version})`, type: 5})
-  //setInterval(async () => dbl.postStats(client.guilds.size), 600000)
+  setInterval(async () => dbl.postStats(client.guilds.size), 600000)
 });
 
 client.on("messageCreate", async message => {
@@ -69,12 +69,12 @@ client.on('messageCreate', async message => {
   if (!message.guildID) return;
   if (!db.has(`suggestionchannel_${message.guildID}`)) return;
   if (db.fetch(`suggestionchannel_${message.guildID}`) != message.channel.id) return;
-  if (db.has(`disablemessagechannel_${message.author.id}`)) return;
+  if (db.has(`disablemessagechannel_${message.guildID}`)) return;
   const dil = db.fetch(`dil_${message.guildID}`) || "english";
   const prefix = db.fetch(`prefix_${message.guildID}`) || ".";
   if (message.content.startsWith(prefix)) return;
   const guild = client.guilds.get(message.guildID)
-  sendSuggestion(message, guild, client, dil)
+  sendSuggestion(message, message.content, guild, client, dil, true)
   message.delete()
 })
 
@@ -128,32 +128,32 @@ client.on('messageReactionAdd', async (message, emoji, user) => {
   if (!db.has(`suggestionchannel_${message.guildID}`)) return;
   if (db.has(`suggestionchannel_${message.guildID}`) && db.fetch(`suggestionchannel_${message.guildID}`) != message.channel.id) return;
   client.guilds.get(message.guildID).channels.get(message.channel.id).getMessage(message.id).then(async msg => {
-    const sugname = `suggestion_${message.guildID}_${msg.embeds[0].title.split(`#`)[1]}`
+    const sugid = Number(msg.embeds[0].title.replace('Suggestion #', '').replace('Öneri #', ''))
+    const sugname = `suggestion_${message.guildID}_${sugid}`
     if (!db.has(sugname)) return;
     const dil = db.fetch(`dil_${msg.guildID}`) || "english";
-    const sugid = Number(msg.embeds[0].title.replace('Suggestion #', '').replace('Öneri #', ''))
     msg.getReaction(db.fetch(`${sugname}.approveemoji`)).then(async rec => {
-      if (db.has(`autoapprove_${msg.guildID}`) && rec.length - 1 >= db.fetch(`autoapprove_${msg.guildID}`)) {
-        manageSuggestion(null, msg.channel.guild, sugid, 'Approved', client, dil, [])
-      }
       msg.getReaction(db.fetch(`${sugname}.denyemoji`)).then(async recc => {
         if (db.has(`ownervoting_${message.guildID}`) && rec.filter(x => x.id == db.fetch(`${sugname}.author`)).length != 0) {
           msg.removeReaction(db.fetch(`${sugname}.approveemoji`), db.fetch(`${sugname}.author`))
-          client.users.get(user.id).getDMChannel().then(async ch => ch.createMessage(`You can't vote to your suggestion in this server.`))
+          return client.users.get(user.id).getDMChannel().then(async ch => ch.createMessage(`You can't vote to your suggestion in this server.`))
         }
         if (db.has(`ownervoting_${message.guildID}`) && recc.filter(x => x.id == db.fetch(`${sugname}.author`)).length != 0) {
           msg.removeReaction(db.fetch(`${sugname}.denyemoji`), db.fetch(`${sugname}.author`))
-          client.users.get(user.id).getDMChannel().then(async ch => ch.createMessage(`You can't vote to your suggestion in this server.`))
+          return client.users.get(user.id).getDMChannel().then(async ch => ch.createMessage(`You can't vote to your suggestion in this server.`))
         }
         if (db.has(`multiplevoting_${message.guildID}`) && rec.filter(x => x.id == user.id).length != 0) {
           if (recc.filter(x => x.id == user.id).length != 0) {
             msg.removeReaction(db.fetch(`${sugname}.approveemoji`), user.id)
             msg.removeReaction(db.fetch(`${sugname}.denyemoji`), user.id)
-            client.users.get(user.id).getDMChannel().then(async ch => ch.createMessage(`Multiple voting is not allowed in this server. You must vote in only one reaction.`))
+            return client.users.get(user.id).getDMChannel().then(async ch => ch.createMessage(`Multiple voting is not allowed in this server. You must vote in only one reaction.`))
           }
         }
+        if (db.has(`autoapprove_${msg.guildID}`) && rec.length - 1 >= db.fetch(`autoapprove_${msg.guildID}`)) {
+          manageSuggestion(null, client.guilds.get(msg.guildID), sugid, 'Approved', client, dil, [])
+        }
         if (db.has(`autodeny_${msg.guildID}`) && recc.length - 1 >= db.fetch(`autodeny_${msg.guildID}`)) {
-          manageSuggestion(null, msg.channel.guild, sugid, 'Denied', client, dil, [])
+          manageSuggestion(null, client.guilds.get(msg.guildID), sugid, 'Denied', client, dil, [])
         }
       })
     })
@@ -175,7 +175,7 @@ client.on('messageReactionAdd', async (message, emoji, userID) => {
         }else{
           msg.getReaction(`❌`).then(async rec => {
             if (rec.length - 1 >= 1) {
-              deleteSuggestion(null, msg.channel.guild, Number(msg.embeds[0].title.replace(`Öneri #`, ``).replace(`Suggestion #`, ``)), client, dil, [], false)
+              deleteSuggestion(null, client.guilds.get(msg.guildID), Number(msg.embeds[0].title.replace(`Öneri #`, ``).replace(`Suggestion #`, ``)), client, dil, [], false, db.fetch(`reviewchannel_${guild.id}`))
             }
           })
         }
@@ -189,9 +189,10 @@ client.on('messageDelete', async message => {
   const map = new Map(Object.entries(db.all()));
   for (const i of map.keys()) {
     if (i.startsWith(`suggestion_${message.guildID}_`) && db.fetch(`${i}.msgid`) == message.id) {
-      deleteSuggestion(null, client.guilds.get(db.fetch(`${i}.guild`)), Number(i.split('_')[2]), client, 'english', [], true)
+      deleteSuggestion(null, client.guilds.get(db.fetch(`${i}.guild`)), Number(i.split('_')[2]), client, 'english', [], true, db.fetch(`${i}.channel`))
     }
   }
 })
 
 client.connect();
+

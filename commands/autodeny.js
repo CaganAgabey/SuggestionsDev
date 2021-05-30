@@ -56,8 +56,8 @@ module.exports.help = {
 	name: "autodeny",
 	nametr: "otomatikred",
 	aliase: [ "autodenition", "otomatikred" ],
-	descriptionen: "Sets if a suggestion can be denied with provided votes. (default: false)",
-	descriptiontr: "Belirlenen emoji sayısıyla bir önerinin reddedilip reddedilmeyeceğini seçer. (normali: kapalı).",
+	descriptionen: "Sets if a suggestion can be denied with provided votes.",
+	descriptiontr: "Belirlenen oy sayısıyla bir önerinin reddedilip reddedilmeyeceğini seçer.",
 	usageen: "allowvote",
 	usagetr: "önek [yeni önek]",
 	category: 'admin'

@@ -63,8 +63,8 @@ module.exports.help = {
   name: "approveemoji",
   nametr: "onayemoji",
   aliase: ["approvemoji", "onayemoji", "onayemojisi"],
-  descriptionen: "Sets an unique emoji to approve emoji.",
-  descriptiontr: "Onay emojisi için farklı bir emoji seçer.",
+  descriptionen: "Sets an emoji to approve emoji.",
+  descriptiontr: "Onay emojisi için bir emoji seçer.",
   usageen: "setchannel [channel name, mention or id]",
   usagetr: "önerikanal [kanal ismi, etiketi veya idsi]",
   category: 'admin'

@@ -64,7 +64,7 @@ module.exports.help = {
   nametr: "redemoji",
   aliase: ["redemoji", "redemojisi"],
   descriptionen: "Sets an unique emoji to deny emoji.",
-  descriptiontr: "Reddetme emojisi için farklı bir emoji seçer.",
+  descriptiontr: "Reddetme emojisi için bir emoji seçer.",
   usageen: "setchannel [channel name, mention or id]",
   usagetr: "önerikanal [kanal ismi, etiketi veya idsi]",
   category: 'admin'

@@ -58,8 +58,8 @@ module.exports.help = {
 	name: "autoapprove",
 	nametr: "otomatikonay",
 	aliase: [ "autoapprovation", "otomatikonay" ],
-	descriptionen: "Sets if a suggestion can be approved with provided votes. (default: false)",
-	descriptiontr: "Belirlenen emoji sayısıyla bir önerinin onaylanıp onaylanmayacağını seçer. (normali: kapalı)",
+	descriptionen: "Sets if a suggestion can be approved with provided votes.",
+	descriptiontr: "Belirlenen oy sayısıyla bir önerinin onaylanıp onaylanmayacağını seçer.",
 	usageen: "allowvote",
 	usagetr: "önek [yeni önek]",
 	category: 'admin'

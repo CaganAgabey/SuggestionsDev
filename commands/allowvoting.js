@@ -40,8 +40,8 @@ module.exports.help = {
 	name: "allowvote",
 	nametr: "oylamaizni",
 	aliase: [ "allowvoting", "oylamaizni" ],
-	descriptionen: "Sets the users can vote suggestions or not. (default: true)",
-	descriptiontr: "Kullanıcıların önerileri oylayabilip oylayamayacağını seçer. (normali: evet)",
+	descriptionen: "Sets the users can vote suggestions or not.",
+	descriptiontr: "Kullanıcıların önerileri oylayabilip oylayamayacağını seçer.",
 	usageen: "allowvote",
 	usagetr: "önek [yeni önek]",
 	category: 'admin'

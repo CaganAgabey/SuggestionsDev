@@ -47,8 +47,8 @@ module.exports.help = {
 	name: "language",
 	nametr: "dil",
 	aliase: [ "lang", "dil" ],
-	descriptionen: "Sets the bot language in this guild. (default: english)",
-	descriptiontr: "Botun bu sunucudaki dilini seçmeye yarar. (normali: english)",
+	descriptionen: "Sets the bot language in this guild.",
+	descriptiontr: "Botun bu sunucudaki dilini seçer.",
 	usageen: "allowvote",
 	usagetr: "önek [yeni önek]",
 	category: 'admin'

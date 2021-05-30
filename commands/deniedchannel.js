@@ -58,7 +58,7 @@ module.exports.help = {
   name: "deniedchannel",
   nametr: "reddedilenönerikanalı",
   aliase: ["denychannel", "reddedilenkanal", "reddedilenönerikanalı", "reddedilenönerikanal"],
-  descriptionen: "Sets a channel to send denied suggestions. (write delete to delete denied channel)",
+  descriptionen: "Sets a channel to send denied suggestions. (write delete to reset)",
   descriptiontr: "Reddedilen önerileri göndermek için bir kanal seçer. (silmek için sil yazın)",
   usageen: "setchannel [channel name, mention or id]",
   usagetr: "önerikanal [kanal ismi, etiketi veya idsi]",

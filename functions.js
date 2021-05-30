@@ -37,7 +37,7 @@ module.exports = {
 						description: data.suggestion,
 						color,
 						author: {
-							name: language == "english" ? `${displaytype.replace(displaytype.charAt(0), displaytype.charAt(0).toUpperCase)} suggestion - ${author.username}#${author.discriminator}` : `${displaytype.replace(displaytype.charAt(0), displaytype.charAt(0).toUpperCase)} öneri - ${author.username}#${author.discriminator}`,
+							name: language == "english" ? `${displaytype} suggestion - ${author.username}#${author.discriminator}` : `${displaytype} öneri - ${author.username}#${author.discriminator}`,
 							icon_url: author.avatarURL || author.defaultAvatarURL
 						},
 						footer: {
@@ -59,7 +59,7 @@ module.exports = {
 						description: data.suggestion,
 						color,
 						author: {
-							name: language == "english" ? `${displaytype.replace(displaytype.charAt(0), displaytype.charAt(0).toUpperCase)} suggestion - ${author.username}#${author.discriminator}` : `${displaytype.replace(displaytype.charAt(0), displaytype.charAt(0).toUpperCase)} öneri - ${author.username}#${author.discriminator}`,
+							name: language == "english" ? `${displaytype} suggestion - ${author.username}#${author.discriminator}` : `${displaytype} öneri - ${author.username}#${author.discriminator}`,
 							icon_url: author.avatarURL || author.defaultAvatarURL
 						},
 						footer: {
@@ -92,12 +92,12 @@ module.exports = {
 		})
 	},
 	
-	deleteSuggestion: async (message, guild, sugid, client, language, args, msgdeleted) => {
+	deleteSuggestion: async (message, guild, sugid, client, language, args, msgdeleted, channelid) => {
 		const db = client.db
 		const data = db.fetch(`suggestion_${guild.id}_${sugid}`);
 		const author = client.users.get(data.author)
 		if (msgdeleted == false) {
-			guild.channels.get(db.fetch(`suggestionchannel_${guild.id}`)).getMessage(data.msgid).then(async msg => msg.delete())
+			guild.channels.get(channelid).getMessage(data.msgid).then(async msg => msg.delete())
 		}
 		if (message != null) message.addReaction(`✅`)
 		db.set(`suggestion_${guild.id}_${sugid}.status`, 'deleted')
@@ -116,7 +116,7 @@ module.exports = {
 		}
 	},
 	
-	sendSuggestion: async (message, guild, client, language) => {
+	sendSuggestion: async (message, suggestion, guild, client, language, sendmessage) => {
 		const db = client.db
 		const guildme = client.guilds.get(guild.id).members.get(client.user.id)
 		if (!guildme.permissions.has('sendMessages')) return message.author.getDMChannel().then(ch => ch.createMessage(`That bot doesn't have send messages permission in this guild.`))
@@ -124,7 +124,7 @@ module.exports = {
 		const map = new Map(Object.entries(db.all()));
 		let oldsugssize = 0
 		for (const i of map.keys()) {
-			if (i.startsWith(`suggestion_${guild.id}_`)) oldsugssize++
+			if (i.startsWith(`suggestion_${guild.id}_`) && Number(i.split('_')[2]) > oldsugssize) oldsugssize = Number(i.split('_')[2])
 		}
 		if (awaitingsuggestions.has(guild.id) && awaitingsuggestions.get(guild.id) >= oldsugssize) oldsugssize = awaitingsuggestions.get(guild.id);
 		awaitingsuggestions.set(guild.id, oldsugssize + 1)
@@ -142,7 +142,7 @@ module.exports = {
 			db.set(`suggestion_${guild.id}_${oldsugssize + 1}`, {
 				status: 'awaiting approval',
 				author: message.author.id,
-				suggestion: message.content.split(' ').slice(1).join(" "),
+				suggestion,
 				timestamp: Date.now(),
 				channel: db.fetch(`reviewchannel_${guild.id}`),
 				guild: guild.id,
@@ -150,11 +150,35 @@ module.exports = {
 				denyemoji,
 				followers: [ message.author.id ]
 			})
-			message.channel.createMessage( language == "english" ? `Successfully sent the suggestion to approval queue! When your suggestion get verified, it will show up here.` : `Öneri başarıyla doğrulama sırasına gönderildi! Önerin doğrulandığında, bu kanalda gözükecektir.`).then(async msg =>
+			if (sendmessage == true) {
+				message.channel.createMessage(language == "english" ? `Successfully sent the suggestion to approval queue! When your suggestion get verified, it will show up here.` : `Öneri başarıyla doğrulama sırasına gönderildi! Önerin doğrulandığında, bu kanalda gözükecektir.`).then(async msg =>
+					guild.channels.get(db.fetch(`reviewchannel_${guild.id}`)).createMessage({
+						embed: {
+							title: `Suggestion #${oldsugssize + 1}`,
+							description: suggestion,
+							color: 4934475,
+							author: {
+								name: `${language == "english" ? `Awaiting suggestion` : `Bekleyen öneri`} - ${message.author.username}#${message.author.discriminator}`,
+								icon_url: message.author.avatarURL || message.author.defaultAvatarURL
+							},
+							footer: {
+								text: client.user.username,
+								icon_url: client.user.avatarURL || client.user.defaultAvatarURL
+							}
+						}
+					}).then(async msgg => {
+						db.set(`suggestion_${guild.id}_${oldsugssize + 1}.msgid`, msgg.id)
+						msgg.addReaction(`✅`)
+						msgg.addReaction(`❌`)
+						await sleep(5000)
+						return msg.delete()
+					}))
+			}
+			if (sendmessage == false) {
 				guild.channels.get(db.fetch(`reviewchannel_${guild.id}`)).createMessage({
 					embed: {
 						title: `Suggestion #${oldsugssize + 1}`,
-						description: message.content.split(' ').slice(1).join(" "),
+						description: suggestion,
 						color: 4934475,
 						author: {
 							name: `${language == "english" ? `Awaiting suggestion` : `Bekleyen öneri`} - ${message.author.username}#${message.author.discriminator}`,
@@ -166,17 +190,16 @@ module.exports = {
 						}
 					}
 				}).then(async msgg => {
-					db.set(`suggestion_${guild.id}_${oldsugssize + 1}.msgid`, msgg.id)
 					msgg.addReaction(`✅`)
 					msgg.addReaction(`❌`)
-					await sleep(5000)
-					msg.delete()
-				}))
+					return db.set(`suggestion_${guild.id}_${oldsugssize + 1}.msgid`, msgg.id)
+				})
+			}
 		} else {
 			guild.channels.get(db.fetch(`suggestionchannel_${guild.id}`)).createMessage({
 				embed: {
 					title: language == "english" ? `Suggestion #${oldsugssize + 1}` : `Öneri #${oldsugssize + 1}`,
-					description: message.content.split(' ').slice(1).join(" "),
+					description: suggestion,
 					color: colorToSignedBit("#00FFFF"),
 					author: {
 						name: `${language == "english" ? `New suggestion` : `Yeni öneri`} - ${message.author.username}#${message.author.discriminator}`,
@@ -192,7 +215,7 @@ module.exports = {
 					status: 'new',
 					msgid: msg.id,
 					author: message.author.id,
-					suggestion: message.content.split(' ').slice(1).join(" "),
+					suggestion: suggestion,
 					timestamp: Date.now(),
 					channel: db.fetch(`suggestionchannel_${guild.id}`),
 					guild: guild.id,
@@ -227,6 +250,7 @@ module.exports = {
 			}
 		}).then(async msgg => {
 			db.set(`suggestion_${guild.id}_${sugid}.msgid`, msgg.id)
+			db.set(`suggestion_${guild.id}_${sugid}.channel`, msgg.channel.id)
 			db.set(`suggestion_${guild.id}_${sugid}.status`, 'new')
 			if (!db.has(`denyvoting_${guild.id}`)) {
 				msgg.addReaction(approveemoji)
@@ -237,7 +261,7 @@ module.exports = {
 				if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
 					embed: {
 						title: 'Followed suggestion has verified!',
-						description: `Followed suggestion that in \`${guild.name}\` has verified. It will be shown in suggestions channel now.\n**Suggestion number: \`#${sugid}\`\n**Suggestion author:** ${author.username}#${author.discriminator}\n**Suggestion:** \`\`\`${db.fetch(`suggestion_${guild.id}_${sugid}.suggestion`)}\`\`\``,
+						description: `Followed suggestion that in \`${guild.name}\` has verified. It will be shown in suggestions channel now.\n**Suggestion number:** \`#${sugid}\`\n**Suggestion author:** ${author.username}#${author.discriminator}\n**Suggestion:** \`\`\`${db.fetch(`suggestion_${guild.id}_${sugid}.suggestion`)}\`\`\``,
 						color: 6579300,
 						footer: {
 							text: `You can disable these DMs with using .senddm command in a guild.`,
