@@ -29,6 +29,7 @@ module.exports = {
 			.replace('maybe', 'düşünülecek')
 		}
 		displaytype = displaytype.replace('maybe', 'potential')
+		displaytype.toString()[0] = displaytype.toString()[0].toUpperCase()
 		guild.channels.get(data.channel).getMessage(data.msgid).then(async msg => {
 			if (!db.has(`${type.toLowerCase()}channel_${guild.id}`) || db.fetch(`${type.toLowerCase()}channel_${guild.id}`) == msg.channel.id || !msg.channel.guild.channels.has(db.fetch(`${type.toLowerCase()}channel_${guild.id}`))) {
 				msg.edit({
