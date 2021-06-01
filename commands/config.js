@@ -36,28 +36,28 @@ module.exports.run = async (client, message, args) => {
 		if (db.has(`maybechannel_${message.guildID}`) && message.channel.guild.channels.has(db.fetch(`maybechannel_${message.guildID}`))) potentialchannel = `<#${db.fetch(`maybechannel_${message.guildID}`)}>`
 		if (!db.has(`maybechannel_${message.guildID}`) || !message.channel.guild.channels.has(db.fetch(`maybechannel_${message.guildID}`))) potentialchannel = `None (\`${prefix}maybechannel\`)`
 		let allowvoting;
-		if (db.has(`denyvoting_${message.guildID}`)) allowvoting = "False"
-		if (!db.has(`denyvoting_${message.guildID}`)) allowvoting = "True"
-        let allowsuggestcommand;
-        if (db.has(`denysuggestcommand_${message.guildID}`)) allowsuggestcommand = "False"
-        if (!db.has(`denysuggestcommand_${message.guildID}`)) allowsuggestcommand = "True"
-        let allowmessagingchannel;
-        if (db.has(`disablemessagechannel_${message.guildID}`)) allowmessagingchannel = "False"
-        if (!db.has(`disablemessagechannel_${message.guildID}`)) allowmessagingchannel = "True"
+		if (db.has(`denyvoting_${message.guildID}`)) allowvoting = `Off \`${prefix}allowvoting\``
+		if (!db.has(`denyvoting_${message.guildID}`)) allowvoting = `On \`${prefix}allowvoting\``
+		let allowsuggestcommand;
+		if (db.has(`denysuggestcommand_${message.guildID}`)) allowsuggestcommand = `Off \`${prefix}allowsuggestcommand\``
+		if (!db.has(`denysuggestcommand_${message.guildID}`)) allowsuggestcommand = `On \`${prefix}allowsuggestcommand\``
+		let allowmessagingchannel;
+		if (db.has(`disablemessagechannel_${message.guildID}`)) allowmessagingchannel = `Off \`${prefix}messagingsuggestionchannel\``
+		if (!db.has(`disablemessagechannel_${message.guildID}`)) allowmessagingchannel = `On \`${prefix}messagingsuggestionchannel\``
 		let ownervoting;
-		if (db.has(`ownervoting_${message.guildID}`)) ownervoting = "False"
-		if (!db.has(`ownervoting_${message.guildID}`)) ownervoting = "True"
+		if (db.has(`ownervoting_${message.guildID}`)) ownervoting = `Off \`${prefix}ownervoting\``
+		if (!db.has(`ownervoting_${message.guildID}`)) ownervoting = `On \`${prefix}ownervoting\``
 		let multiplevoting;
-		if (db.has(`multiplevoting_${message.guildID}`)) multiplevoting = "False"
-		if (!db.has(`multiplevoting_${message.guildID}`)) multiplevoting = "True"
+		if (db.has(`multiplevoting_${message.guildID}`)) multiplevoting = `Off \`${prefix}multiplevoting\``
+		if (!db.has(`multiplevoting_${message.guildID}`)) multiplevoting = `On \`${prefix}multiplevoting\``
 		let customapprove;
 		if (db.has(`customapprove_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customapprove_${message.guildID}`)) == true) customapprove = db.fetch(`customapprove_${message.guildID}`)
 		if (db.has(`customapprove_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customapprove_${message.guildID}`)) == false) customapprove = '<:' + db.fetch(`customapprove_${message.guildID}`).split(':')[0] + ':' + db.fetch(`customapprove_${message.guildID}`).split(':')[1] + '>'
-		if (!db.has(`customapprove_${message.guildID}`)) customapprove = "👍 (default)"
+		if (!db.has(`customapprove_${message.guildID}`)) customapprove = `👍 (default \`${prefix}approveemoji\`)`
 		let customdeny;
 		if (db.has(`customdeny_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customdeny_${message.guildID}`)) == true) customdeny = db.fetch(`customdeny_${message.guildID}`)
 		if (db.has(`customdeny_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customdeny_${message.guildID}`)) == false) customdeny = '<:' + db.fetch(`customdeny_${message.guildID}`).split(':')[0] + ':' + db.fetch(`customdeny_${message.guildID}`).split(':')[1] + '>'
-		if (!db.has(`customdeny_${message.guildID}`)) customdeny = "👎 (default)"
+		if (!db.has(`customdeny_${message.guildID}`)) customdeny = `👎 (default \`${prefix}denyemoji\`)`
 		let autodeny;
 		if (db.has(`autodeny_${message.guildID}`)) autodeny = db.fetch(`autodeny_${message.guildID}`)
 		if (!db.has(`autodeny_${message.guildID}`)) autodeny = `None (\`${prefix}autodeny\`)`
@@ -67,7 +67,7 @@ module.exports.run = async (client, message, args) => {
 		message.channel.createMessage({
 			embed: {
 				title: `__**Config**__`,
-				description: `**Suggestions channel:** ${suggestionchannel}\n**Suggestion review channel:** ${reviewchannel}\n \n**Approved suggestions channel:** ${approvedchannel}\n**Denied suggestions channel:** ${deniedchannel}\n**Invalid suggestions channel:** ${invalidchannel}\n**Potential suggestions channel:** ${potentialchannel}\n \n**Allow vote on suggestions:** ${allowvoting}\n**Allow suggest command:** ${allowsuggestcommand}\n**Allow messaging to suggestion channel to send suggestion:** ${allowmessagingchannel}\n**Allow multiple voting:** ${multiplevoting}\n**Allow self voting:** ${ownervoting}\n \n**Approve emoji:** ${customapprove}\n**Deny emoji:** ${customdeny}\n \n**Auto approve count:** ${autoapprove}\n**Auto deny count:** ${autodeny}\n \n**__Staff roles__**\n${staffroles}\n \n**Prefix:** ${prefix}`,
+				description: `**Suggestions channel:** ${suggestionchannel}\n**Suggestion review channel:** ${reviewchannel}\n \n**Approved suggestions channel:** ${approvedchannel}\n**Denied suggestions channel:** ${deniedchannel}\n**Invalid suggestions channel:** ${invalidchannel}\n**Potential suggestions channel:** ${potentialchannel}\n \n**Allow vote on suggestions:** ${allowvoting}\n**Allow suggest command:** ${allowsuggestcommand}\n**Allow messaging to suggestion channel to send suggestion:** ${allowmessagingchannel}\n**Allow multiple voting:** ${multiplevoting}\n**Allow self voting:** ${ownervoting}\n \n**Approve emoji:** ${customapprove}\n**Deny emoji:** ${customdeny}\n \n**Auto approve count:** ${autoapprove}\n**Auto deny count:** ${autodeny}\n \n**__Staff roles (\`${prefix}staffrole\`)__**\n${staffroles}\n \n**Prefix (\`${prefix}prefix\`):** ${prefix}`,
 				color: colorToSignedBit("#2F3136")
 			}
 		})
@@ -100,28 +100,28 @@ module.exports.run = async (client, message, args) => {
 		if (db.has(`maybechannel_${message.guildID}`) && message.channel.guild.channels.has(db.fetch(`maybechannel_${message.guildID}`))) potentialchannel = `<#${db.fetch(`maybechannel_${message.guildID}`)}>`
 		if (!db.has(`maybechannel_${message.guildID}`) || !message.channel.guild.channels.has(db.fetch(`maybechannel_${message.guildID}`))) potentialchannel = `Belirlenmemiş (\`${prefix}düşünülecekönerikanal\`)`
 		let allowvoting;
-		if (db.has(`denyvoting_${message.guildID}`)) allowvoting = "Kapalı"
-		if (!db.has(`denyvoting_${message.guildID}`)) allowvoting = "Açık"
+		if (db.has(`denyvoting_${message.guildID}`)) allowvoting = `Kapalı \`${prefix}oylamaizni\``
+		if (!db.has(`denyvoting_${message.guildID}`)) allowvoting = `Açık \`${prefix}oylamaizni\``
         let allowsuggestcommand;
-        if (db.has(`denysuggestcommand_${message.guildID}`)) allowsuggestcommand = "Kapalı"
-        if (!db.has(`denysuggestcommand_${message.guildID}`)) allowsuggestcommand = "Açık"
+        if (db.has(`denysuggestcommand_${message.guildID}`)) allowsuggestcommand = `Kapalı \`${prefix}önerikomudunukullanma\``
+        if (!db.has(`denysuggestcommand_${message.guildID}`)) allowsuggestcommand = `Açık \`${prefix}önerikomudunukullanma\``
         let allowmessagingchannel;
-        if (db.has(`disablemessagechannel_${message.guildID}`)) allowmessagingchannel = "Kapalı"
-        if (!db.has(`disablemessagechannel_${message.guildID}`)) allowmessagingchannel = "Açık"
+        if (db.has(`disablemessagechannel_${message.guildID}`)) allowmessagingchannel = `Kapalı \`${prefix}önerikanalınamesajgönderme\``
+        if (!db.has(`disablemessagechannel_${message.guildID}`)) allowmessagingchannel = `Açık \`${prefix}önerikanalınamesajgönderme\``
 		let ownervoting;
-		if (db.has(`ownervoting_${message.guildID}`)) ownervoting = "False"
-		if (!db.has(`ownervoting_${message.guildID}`)) ownervoting = "True"
+		if (db.has(`ownervoting_${message.guildID}`)) ownervoting = `Kapalı \`${prefix}sahipoylama\``
+		if (!db.has(`ownervoting_${message.guildID}`)) ownervoting = `Açık \`${prefix}sahipoylama\``
 		let multiplevoting;
-		if (db.has(`multiplevoting_${message.guildID}`)) multiplevoting = "False"
-		if (!db.has(`multiplevoting_${message.guildID}`)) multiplevoting = "True"
+		if (db.has(`multiplevoting_${message.guildID}`)) multiplevoting = `Kapalı \`${prefix}çokluoylama\``
+		if (!db.has(`multiplevoting_${message.guildID}`)) multiplevoting = `Açık \`${prefix}çokluoylama\``
 		let customapprove;
 		if (db.has(`customapprove_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customapprove_${message.guildID}`)) == true) customapprove = db.fetch(`customapprove_${message.guildID}`)
 		if (db.has(`customapprove_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customapprove_${message.guildID}`)) == false) customapprove = '<:' + db.fetch(`customapprove_${message.guildID}`).split(':')[0] + ':' + db.fetch(`customapprove_${message.guildID}`).split(':')[1] + '>'
-		if (!db.has(`customapprove_${message.guildID}`)) customapprove = "👍 (default)"
+		if (!db.has(`customapprove_${message.guildID}`)) customapprove = `👍 (varsayılan \`${prefix}onayemojisi\`)`
 		let customdeny;
 		if (db.has(`customdeny_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customdeny_${message.guildID}`)) == true) customdeny = db.fetch(`customdeny_${message.guildID}`)
 		if (db.has(`customdeny_${message.guildID}`) && /\p{Emoji}/u.test(db.fetch(`customdeny_${message.guildID}`)) == false) customdeny = '<:' + db.fetch(`customdeny_${message.guildID}`).split(':')[0] + ':' + db.fetch(`customdeny_${message.guildID}`).split(':')[1] + '>'
-		if (!db.has(`customdeny_${message.guildID}`)) customdeny = "👎 (default)"
+		if (!db.has(`customdeny_${message.guildID}`)) customdeny = `👎 (varsayılan \`${prefix}redemojisi\`)`
 		let autodeny;
 		if (db.has(`autodeny_${message.guildID}`)) autodeny = db.fetch(`autodeny_${message.guildID}`)
 		if (!db.has(`autodeny_${message.guildID}`)) autodeny = `Belirlenmemiş (\`${prefix}otomatikred\`)`
@@ -131,7 +131,7 @@ module.exports.run = async (client, message, args) => {
 		message.channel.createMessage({
 			embed: {
 				title: `__**Ayarlamalar**__`,
-				description: `**Öneri kanalı:** ${suggestionchannel}\n**Öneri doğrulama kanalı:** ${reviewchannel}\n \n**Onaylanmış öneri kanalı:** ${approvedchannel}\n**Reddedilmiş öneri kanalı:** ${deniedchannel}\n**Geçersiz öneri kanalı:** ${invalidchannel}\n**Düşünülecek öneri kanalı:** ${potentialchannel}\n \n**Önerilerde oylama:** ${allowvoting}\n**Öner komudunu kullanma:** ${allowsuggestcommand}\n**Öneri göndermek için öneri kanalına mesaj atma:** ${allowmessagingchannel}\n**Çoklu oylama:** ${multiplevoting}\n**Kendi önerini oylama:** ${ownervoting}\n \n**Onay emojisi:** ${customapprove}\n**Red emojisi:** ${customdeny}\n \n**Otomatik onay sayısı:** ${autoapprove}\n**Otomatik red sayısı:** ${autodeny}\n \n**__Yetkili rolleri__**\n${staffroles}\n \n**Önek:** ${prefix}`,
+				description: `**Öneri kanalı:** ${suggestionchannel}\n**Öneri doğrulama kanalı:** ${reviewchannel}\n \n**Onaylanmış öneri kanalı:** ${approvedchannel}\n**Reddedilmiş öneri kanalı:** ${deniedchannel}\n**Geçersiz öneri kanalı:** ${invalidchannel}\n**Düşünülecek öneri kanalı:** ${potentialchannel}\n \n**Önerilerde oylama emojileri:** ${allowvoting}\n**Öner komudunu kullanabilme:** ${allowsuggestcommand}\n**Öneri göndermek için öneri kanalına mesaj atma:** ${allowmessagingchannel}\n**Birden fazla oy kullanma:** ${multiplevoting}\n**Kendi önerini oylama:** ${ownervoting}\n \n**Onay emojisi:** ${customapprove}\n**Red emojisi:** ${customdeny}\n \n**Otomatik onay sayısı:** ${autoapprove}\n**Otomatik red sayısı:** ${autodeny}\n \n**__Yetkili rolleri (\`${prefix}yetkilirol\`)__**\n${staffroles}\n \n**Önek (\`${prefix}önek\`):** ${prefix}`,
 				color: colorToSignedBit("#2F3136")
 			}
 		})

@@ -9,7 +9,7 @@ client.aliases = new Eris.Collection(undefined, undefined);
 const DBL = require('dblapi.js')
 const dbl = new DBL(settings.dbltoken)
 const awaitingsuggestions = new Map()
-const version = "1.0";
+const version = "1.0.1";
 const {manageSuggestion, deleteSuggestion, sendSuggestion, verifySuggestion} = require('./functions')
 client.db = db
 
@@ -74,6 +74,9 @@ client.on('messageCreate', async message => {
   const prefix = db.fetch(`prefix_${message.guildID}`) || ".";
   if (message.content.startsWith(prefix)) return;
   const guild = client.guilds.get(message.guildID)
+  const guildme = guild.members.get(client.user.id)
+  if (!guildme.permissions.has('sendMessages')) return message.author.getDMChannel().then(ch => ch.createMessage(`That bot doesn't have send messages permission in this guild.`))
+  if (!guildme.permissions.has('manageMessages') || !guildme.permissions.has('embedLinks') || !guildme.permissions.has('addReactions')) return message.channel.createMessage(`The bot should have Manage Messages, Embed Links and Add Reactions permissions in order to work properly.`)
   sendSuggestion(message, message.content, guild, client, dil, true)
   message.delete()
 })
@@ -98,10 +101,9 @@ client.on('guildCreate', async guild => {
   }
   let channels = guild.channels.filter(c => c.type == 0 && c.permissionOverwrites.has(role.id) && JSON.stringify(c.permissionOverwrites.get(role.id).json).includes('sendMessages') && c.permissionOverwrites.get(role.id).json.sendMessages != false)
   if (channels.length <= 0) channels = guild.channels.filter(c => c.type == 0 && !c.permissionOverwrites.has(role.id) && !c.permissionOverwrites.has(everyonerole.id));
-  if (channels.length <= 0) return;
-  let lasttimestamp = 0;
-  let channel;
+  let channel = 0;
   if (channels.length > 1) {
+    let lasttimestamp = 0;
     for (const ch of channels) {
       ch.getMessages({limit: 1}).then(async msg => {
         if (msg[0].timestamp > lasttimestamp) {
@@ -110,7 +112,19 @@ client.on('guildCreate', async guild => {
         }
       })
     }
-  } else channel = channels[0]
+  }
+  if (channels.length == 0) {
+    let lasttimestamp = 0;
+    for (const ch of guild.channels.filter(c => c.type == 0)) {
+      ch.getMessages({limit: 1}).then(async msg => {
+        if (msg[0].timestamp > lasttimestamp) {
+          lasttimestamp = msg[0].timestamp
+          channel = ch
+        }
+      })
+    }
+  }
+  if (channel == 0) channel = channels[0]
   channel.createMessage({
     embed: {
       title: '**__Thanks for adding Suggestions bot!__**',

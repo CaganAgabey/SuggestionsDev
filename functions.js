@@ -48,8 +48,8 @@ module.exports = {
 						image: data.attachment ? {url: data.attachment} : null
 					}
 				})
-				db.set(`suggestion_${guild.id}_${sugid}.channel`, msg.channel.id)
 				msg.removeReactions()
+				db.set(`suggestion_${guild.id}_${sugid}.channel`, msg.channel.id)
 			}
 			if (db.has(`${type.toLowerCase()}channel_${guild.id}`) && db.fetch(`${type.toLowerCase()}channel_${guild.id}`) != msg.channel.id && msg.channel.guild.channels.has(db.fetch(`${type.toLowerCase()}channel_${guild.id}`))) {
 				msg.delete()
@@ -75,6 +75,7 @@ module.exports = {
 				})
 			}
 			db.set(`suggestion_${guild.id}_${sugid}.status`, type.toLowerCase())
+			if (message != null) message.addReaction(`✅`)
 			for (const id of data.followers) {
 				if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
 					embed: {
@@ -88,7 +89,6 @@ module.exports = {
 					}
 				})).catch(async e => console.log(`Someone's dm is closed (${e})`))
 			}
-			if (message != null) message.addReaction(`✅`)
 		})
 	},
 	
@@ -99,8 +99,8 @@ module.exports = {
 		if (msgdeleted == false) {
 			guild.channels.get(channelid).getMessage(data.msgid).then(async msg => msg.delete())
 		}
-		if (message != null) message.addReaction(`✅`)
 		db.set(`suggestion_${guild.id}_${sugid}.status`, 'deleted')
+		if (message != null) message.addReaction(`✅`)
 		for (const id of data.followers) {
 			if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
 				embed: {
@@ -118,9 +118,6 @@ module.exports = {
 	
 	sendSuggestion: async (message, suggestion, guild, client, language, sendmessage) => {
 		const db = client.db
-		const guildme = client.guilds.get(guild.id).members.get(client.user.id)
-		if (!guildme.permissions.has('sendMessages')) return message.author.getDMChannel().then(ch => ch.createMessage(`That bot doesn't have send messages permission in this guild.`))
-		if (!guildme.permissions.has('manageMessages') || !guildme.permissions.has('embedLinks') || !guildme.permissions.has('addReactions')) return message.channel.createMessage(`The bot should have Manage Messages, Embed Links and Add Reactions permissions in order to work properly.`)
 		const map = new Map(Object.entries(db.all()));
 		let oldsugssize = 0
 		for (const i of map.keys()) {
@@ -139,17 +136,6 @@ module.exports = {
 			else if (guild.emojis.filter(x => x.name == db.fetch(`customdeny_${guild.id}`).split(':')[0] && x.id == db.fetch(`customdeny_${guild.id}`).split(':')[1]).length != 0) denyemoji = db.fetch(`customdeny_${guild.id}`)
 		}
 		if (db.has(`reviewchannel_${guild.id}`) && guild.channels.has(db.fetch(`reviewchannel_${guild.id}`))) {
-			db.set(`suggestion_${guild.id}_${oldsugssize + 1}`, {
-				status: 'awaiting approval',
-				author: message.author.id,
-				suggestion,
-				timestamp: Date.now(),
-				channel: db.fetch(`reviewchannel_${guild.id}`),
-				guild: guild.id,
-				approveemoji,
-				denyemoji,
-				followers: [ message.author.id ]
-			})
 			if (sendmessage == true) {
 				message.channel.createMessage(language == "english" ? `Successfully sent the suggestion to approval queue! When your suggestion get verified, it will show up here.` : `Öneri başarıyla doğrulama sırasına gönderildi! Önerin doğrulandığında, bu kanalda gözükecektir.`).then(async msg =>
 					guild.channels.get(db.fetch(`reviewchannel_${guild.id}`)).createMessage({
@@ -167,9 +153,20 @@ module.exports = {
 							}
 						}
 					}).then(async msgg => {
-						db.set(`suggestion_${guild.id}_${oldsugssize + 1}.msgid`, msgg.id)
 						msgg.addReaction(`✅`)
 						msgg.addReaction(`❌`)
+						db.set(`suggestion_${guild.id}_${oldsugssize + 1}`, {
+							status: 'awaiting approval',
+							msgid: msgg.id,
+							author: message.author.id,
+							suggestion,
+							timestamp: Date.now(),
+							channel: db.fetch(`reviewchannel_${guild.id}`),
+							guild: guild.id,
+							approveemoji,
+							denyemoji,
+							followers: [ message.author.id ]
+						})
 						await sleep(5000)
 						return msg.delete()
 					}))
@@ -211,11 +208,15 @@ module.exports = {
 					}
 				}
 			}).then(async msg => {
+				if (!db.has(`denyvoting_${guild.id}`)) {
+					msg.addReaction(approveemoji)
+					msg.addReaction(denyemoji)
+				}
 				db.set(`suggestion_${guild.id}_${oldsugssize + 1}`, {
 					status: 'new',
 					msgid: msg.id,
 					author: message.author.id,
-					suggestion: suggestion,
+					suggestion,
 					timestamp: Date.now(),
 					channel: db.fetch(`suggestionchannel_${guild.id}`),
 					guild: guild.id,
@@ -223,10 +224,6 @@ module.exports = {
 					denyemoji,
 					followers: [ message.author.id ]
 				})
-				if (!db.has(`denyvoting_${guild.id}`)) {
-					msg.addReaction(approveemoji)
-					msg.addReaction(denyemoji)
-				}
 			})
 		}
 	},
@@ -249,14 +246,14 @@ module.exports = {
 				footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}
 			}
 		}).then(async msgg => {
-			db.set(`suggestion_${guild.id}_${sugid}.msgid`, msgg.id)
-			db.set(`suggestion_${guild.id}_${sugid}.channel`, msgg.channel.id)
-			db.set(`suggestion_${guild.id}_${sugid}.status`, 'new')
 			if (!db.has(`denyvoting_${guild.id}`)) {
 				msgg.addReaction(approveemoji)
 				msgg.addReaction(denyemoji)
 			}
 			message.delete()
+			db.set(`suggestion_${guild.id}_${sugid}.msgid`, msgg.id)
+			db.set(`suggestion_${guild.id}_${sugid}.channel`, msgg.channel.id)
+			db.set(`suggestion_${guild.id}_${sugid}.status`, 'new')
 			for (const id of db.fetch(`suggestion_${guild.id}_${sugid}.followers`)) {
 				if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
 					embed: {
@@ -288,8 +285,8 @@ module.exports = {
 					image: {url: typeof image == "string" ? image : image.url}
 				}
 			})
-			db.set(`suggestion_${guild.id}_${sugid}.attachment`, typeof image == "string" ? image : image.url)
 			if (message != null) message.addReaction(`✅`)
+			db.set(`suggestion_${guild.id}_${sugid}.attachment`, typeof image == "string" ? image : image.url)
 			for (const id of db.fetch(`suggestion_${guild.id}_${sugid}.followers`)) {
 				if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
 					embed: {
