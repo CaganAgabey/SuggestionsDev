@@ -18,7 +18,6 @@ module.exports.run = async (client, message, args) => {
 		if (!sugid) return message.channel.createMessage(`You must provide a suggestion number to manage.`)
 		if (!db.has(`suggestion_${message.guildID}_${sugid}`)) return message.channel.createMessage(`Can't find a suggestion with this number in this guild.`)
 		if (!client.guilds.get(message.guildID).channels.get(db.fetch(`suggestionchannel_${message.guildID}`))) return message.channel.createMessage(`This server's suggestion channel has deleted, so you can't manage suggestions until setting a new suggestion channel.`)
-		if (db.fetch(`suggestion_${message.guildID}_${sugid}.status`) == "awaiting approval") return message.channel.createMessage(`You must review this suggestion in review channel with reactions before using this command.`)
 		if (db.fetch(`suggestion_${message.guildID}_${sugid}.status`) == "deleted") return message.channel.createMessage(`This suggestion has deleted!`)
 		const image = message.attachments[0] || args[1];
 		if (!image) return message.channel.createMessage(`You must send an image or an image link.`)
@@ -35,7 +34,6 @@ module.exports.run = async (client, message, args) => {
 		if (!sugid) return message.channel.createMessage(`Yönetmek için bir öneri numarası belirtmelisin.`)
 		if (!db.has(`suggestion_${message.guildID}_${sugid}`)) return message.channel.createMessage(`Bu sunucuda bu numara ile böyle bir öneri bulunamadı.`)
 		if (!client.guilds.get(message.guildID).channels.get(db.fetch(`suggestionchannel_${message.guildID}`))) return message.channel.createMessage(`Bu sunucunun öneri kanalı silinmiş, bu sebeple yeni bir öneri kanalı seçmeden önerileri yönetemezsin.`)
-		if (db.fetch(`suggestion_${message.guildID}_${sugid}.status`) == "awaiting approval") return message.channel.createMessage(`Bu komudu kullanmadan önce öneriyi doğrulama kanalında tepkiler ile doğrulamalısın veya silmelisin.`)
 		if (db.fetch(`suggestion_${message.guildID}_${sugid}.status`) == "deleted") return message.channel.createMessage(`Bu öneri silinmiş!`)
         const image = message.attachments[0] || args[1];
         if (!image) return message.channel.createMessage(`Bir resim atmalısın veya resim linki belirtmelisin.`)

@@ -1,7 +1,7 @@
 const Eris = require('eris');
 const fs = require('fs');
 const settings = require("./settings.json")
-const client = new Eris(settings.token);
+const client = new Eris(`Bot ${settings.token}`, {defaultImageFormat: "png", defaultImageSize: 32, maxShards: "auto", messageLimit: 500});
 const arkdb = require('ark.db');
 const db = new arkdb.Database()
 client.commands = new Eris.Collection(undefined, undefined);
@@ -45,6 +45,7 @@ fs.readdir("./commands/", async (err, files) => {
 client.once('ready', async () => {
   console.log(`Logged in as ${client.user.username}!`);
   client.editStatus("online", {name: `.help | .invite (v${version})`, type: 5})
+  client.guilds.get('662632169277227009').fetchMembers({userIDs: [ "343412762522812419" ]})
   setInterval(async () => dbl.postStats(client.guilds.size), 600000)
 });
 
@@ -137,6 +138,7 @@ client.on('guildCreate', async guild => {
 })
 
 client.on('messageReactionAdd', async (message, emoji, user) => {
+  if (!client.users.has(user.id)) client.guilds.get(message.guildID).fetchMembers({userIDs: [ user.id ]})
   if (client.users.get(user.id).bot) return;
   if (!message.guildID) return;
   if (!db.has(`suggestionchannel_${message.guildID}`)) return;
@@ -174,28 +176,28 @@ client.on('messageReactionAdd', async (message, emoji, user) => {
   })
 })
 
-client.on('messageReactionAdd', async (message, emoji, userID) => {
+client.on('messageReactionAdd', async (message, emoji, user) => {
   if (!db.has(`reviewchannel_${message.guildID}`)) return;
-  if (client.users.get(userID.id).bot) return;
+  if (db.fetch(`reviewchannel_${guild.id}`) != message.channel.id) return
+  if (!client.users.has(user.id)) client.guilds.get(message.guildID).fetchMembers({userIDs: [ user.id ]})
+  if (client.users.get(user.id).bot) return;
   const dil = db.fetch(`dil_${message.guildID}`) || "english";
   const guild = client.guilds.get(message.guildID)
-  if (!db.has(`staffrole_${guild.id}`) && !guild.members.get(userID.id).permissions.has('manageMessages')) return;
-  if (db.has(`staffrole_${guild.id}`) && !guild.members.get(userID.id).roles.some(r => db.fetch(`staffrole_${guild.id}`).includes(r)) && !guild.members.get(userID.id).permissions.has('administrator')) return;
-  if (db.fetch(`reviewchannel_${guild.id}`) == message.channel.id) {
-    guild.channels.get(message.channel.id).getMessage(message.id).then(async msg => {
-      msg.getReaction(`✅`).then(async rec => {
-        if (rec.length - 1 >= 1) {
-          verifySuggestion(msg, msg.channel.guild, client, dil)
-        }else{
-          msg.getReaction(`❌`).then(async rec => {
-            if (rec.length - 1 >= 1) {
-              deleteSuggestion(null, client.guilds.get(msg.guildID), Number(msg.embeds[0].title.replace(`Öneri #`, ``).replace(`Suggestion #`, ``)), client, dil, [], false, db.fetch(`reviewchannel_${guild.id}`))
-            }
-          })
-        }
-      })
+  if (!db.has(`staffrole_${guild.id}`) && !guild.members.get(user.id).permissions.has('manageMessages')) return;
+  if (db.has(`staffrole_${guild.id}`) && !guild.members.get(user.id).roles.some(r => db.fetch(`staffrole_${guild.id}`).includes(r)) && !guild.members.get(user.id).permissions.has('administrator')) return;
+  guild.channels.get(message.channel.id).getMessage(message.id).then(async msg => {
+    msg.getReaction(`✅`).then(async rec => {
+      if (rec.length - 1 >= 1) {
+        verifySuggestion(msg, msg.channel.guild, client, dil)
+      }else{
+        msg.getReaction(`❌`).then(async rec => {
+          if (rec.length - 1 >= 1) {
+            deleteSuggestion(null, client.guilds.get(msg.guildID), Number(msg.embeds[0].title.replace(`Öneri #`, ``).replace(`Suggestion #`, ``)), client, dil, [], false, db.fetch(`reviewchannel_${guild.id}`))
+          }
+        })
+      }
     })
-  }
+  })
 })
 
 client.on('messageDelete', async message => {
