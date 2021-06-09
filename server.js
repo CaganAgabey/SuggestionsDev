@@ -9,7 +9,7 @@ client.aliases = new Eris.Collection(undefined, undefined);
 const DBL = require('dblapi.js')
 const dbl = new DBL(settings.dbltoken)
 const awaitingsuggestions = new Map()
-const version = "1.0.1";
+const version = "1.0.2";
 const {manageSuggestion, deleteSuggestion, sendSuggestion, verifySuggestion} = require('./functions')
 client.db = db
 
