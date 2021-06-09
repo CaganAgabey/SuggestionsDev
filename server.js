@@ -210,5 +210,9 @@ client.on('messageDelete', async message => {
   }
 })
 
+client.on('error', async error => {
+  console.log(error.stack)
+})
+
 client.connect();
 
