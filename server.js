@@ -6,10 +6,10 @@ const arkdb = require('ark.db');
 const db = new arkdb.Database()
 client.commands = new Eris.Collection(undefined, undefined);
 client.aliases = new Eris.Collection(undefined, undefined);
-const DBL = require('dblapi.js')
-const dbl = new DBL(settings.dbltoken)
+const autoposter = require('topgg-autoposter')
+const autopost = new autoposter.AutoPoster(settings.dbltoken, client)
 const awaitingsuggestions = new Map()
-const version = "1.0.2";
+const version = "1.0.3";
 const {manageSuggestion, deleteSuggestion, sendSuggestion, verifySuggestion} = require('./functions')
 client.db = db
 
@@ -44,20 +44,29 @@ fs.readdir("./commands/", async (err, files) => {
 
 client.once('ready', async () => {
   console.log(`Logged in as ${client.user.username}!`);
-  client.editStatus("online", {name: `.help | .invite (v${version})`, type: 5})
+  client.editStatus("online", {name: `.help | .invite | v${version}`, type: 5})
   client.guilds.get('662632169277227009').fetchMembers({userIDs: [ "343412762522812419" ]})
-  setInterval(async () => dbl.postStats(client.guilds.size), 600000)
+  const map = new Map(Object.entries(db.all())).keys();
+  for (const i of map) {
+    if (i.startsWith(`suggestion_`)) {
+      if (!client.guilds.has(db.fetch(`${i}.guild`))) db.delete(i)
+      else if (!client.guilds.get(db.fetch(`${i}.guild`)).channels.has(db.fetch(`${i}.guild`))) db.delete(i)
+      else if (Date.now() - db.fetch(`${i}.timestamp`) <= 2592000000) client.guilds.get(db.fetch(`${i}.guild`)).channels.get(db.fetch(`${i}.channel`)).getMessage(db.fetch(`${i}.msgid`)).catch(e => db.delete(i))
+    }
+  }
 });
 
 client.on("messageCreate", async message => {
   if (message.author.bot) return;
+  if (!message.guildID) return message.channel.createMessage(`You can't use commands via DMs in this bot. You can only receive suggestion updates via DMs in this bot.`)
   const prefix = message.guildID ? db.fetch(`prefix_${message.guildID}`) || "." : ".";
   if (!message.content.startsWith(prefix)) return;
   const messageArray = message.content.split('  ').join(' ').split(" ");
   const cmd = messageArray[0];
   const args = messageArray.slice(1);
-  if (!message.guildID) return message.channel.createMessage(`You can't use commands via DMs in this bot. You can only receive suggestion updates via DMs in this bot.`)
-  const guildme = client.guilds.get(message.guildID).members.get(client.user.id)
+  const guild = client.guilds.get(message.guildID)
+  guild.fetchMembers({userIDs: [ client.user.id ]})
+  const guildme = guild.members.get(client.user.id)
   if (!guildme.permissions.has('sendMessages')) return message.author.getDMChannel().then(ch => ch.createMessage(`That bot doesn't have send messages permission in this guild.`))
   if (!guildme.permissions.has('manageMessages') || !guildme.permissions.has('embedLinks') || !guildme.permissions.has('addReactions')) return message.channel.createMessage(`The bot should have Manage Messages, Embed Links and Add Reactions permissions in order to work properly.`)
   let commandfile = client.commands.get(cmd.slice(prefix.length));
@@ -75,6 +84,7 @@ client.on('messageCreate', async message => {
   const prefix = db.fetch(`prefix_${message.guildID}`) || ".";
   if (message.content.startsWith(prefix)) return;
   const guild = client.guilds.get(message.guildID)
+  guild.fetchMembers({userIDs: [ client.user.id ]})
   const guildme = guild.members.get(client.user.id)
   if (!guildme.permissions.has('sendMessages')) return message.author.getDMChannel().then(ch => ch.createMessage(`That bot doesn't have send messages permission in this guild.`))
   if (!guildme.permissions.has('manageMessages') || !guildme.permissions.has('embedLinks') || !guildme.permissions.has('addReactions')) return message.channel.createMessage(`The bot should have Manage Messages, Embed Links and Add Reactions permissions in order to work properly.`)

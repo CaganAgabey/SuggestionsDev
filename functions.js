@@ -39,8 +39,8 @@ module.exports = {
 						description: data.suggestion,
 						color,
 						author: {
-							name: language == "english" ? `${displaytype} suggestion - ${author.username}#${author.discriminator}` : `${displaytype} öneri - ${author.username}#${author.discriminator}`,
-							icon_url: author.avatarURL || author.defaultAvatarURL
+							name: language == "english" ? `${displaytype} suggestion - ${client.users.has(data.author) ? `${author.username}#${author.discriminator}` : msg.embeds[0].author.name.split(' - ')[1]}` : `${displaytype} öneri - ${client.users.has(data.author) ? `${author.username}#${author.discriminator}` : msg.embeds[0].author.name.split(' - ')[1]}`,
+							icon_url: client.users.has(data.author) ? author.avatarURL || author.defaultAvatarURL : msg.embeds[0].author.icon_url
 						},
 						footer: {
 							text: client.user.username,
@@ -54,15 +54,14 @@ module.exports = {
 				db.set(`suggestion_${guild.id}_${sugid}.channel`, msg.channel.id)
 			}
 			if (db.has(`${type.toLowerCase()}channel_${guild.id}`) && db.fetch(`${type.toLowerCase()}channel_${guild.id}`) != msg.channel.id && msg.channel.guild.channels.has(db.fetch(`${type.toLowerCase()}channel_${guild.id}`))) {
-				msg.delete()
 				msg.channel.guild.channels.get(db.fetch(`${type.toLowerCase()}channel_${guild.id}`)).createMessage({
 					embed: {
 						title: language == "english" ? `Suggestion #${sugid}` : `Öneri #${sugid}`,
 						description: data.suggestion,
 						color,
 						author: {
-							name: language == "english" ? `${displaytype} suggestion - ${author.username}#${author.discriminator}` : `${displaytype} öneri - ${author.username}#${author.discriminator}`,
-							icon_url: author.avatarURL || author.defaultAvatarURL
+							name: language == "english" ? `${displaytype} suggestion - ${client.users.has(data.author) ? `${author.username}#${author.discriminator}` : msg.embeds[0].author.name.split(' - ')[1]}` : `${displaytype} öneri - ${client.users.has(data.author) ? `${author.username}#${author.discriminator}` : msg.embeds[0].author.name.split(' - ')[1]}`,
+							icon_url: client.users.has(data.author) ? author.avatarURL || author.defaultAvatarURL : msg.embeds[0].author.icon_url
 						},
 						footer: {
 							text: client.user.username,
@@ -74,11 +73,14 @@ module.exports = {
 				}).then(async msgg => {
 					db.set(`suggestion_${guild.id}_${sugid}.channel`, msgg.channel.id)
 					db.set(`suggestion_${guild.id}_${sugid}.msgid`, msgg.id)
+					msg.delete()
 				})
 			}
 			db.set(`suggestion_${guild.id}_${sugid}.status`, type.toLowerCase())
 			if (message != null) message.addReaction(`✅`)
+			guild.fetchMembers({userIDs: data.followers})
 			for (const id of data.followers) {
+				if (!client.users.has(id)) return;
 				if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
 					embed: {
 						title: `Followed suggestion has ${type.toLowerCase()}!`,
@@ -104,7 +106,9 @@ module.exports = {
 		}
 		db.set(`suggestion_${guild.id}_${sugid}.status`, 'deleted')
 		if (message != null) message.addReaction(`✅`)
+		guild.fetchMembers({userIDs: data.followers})
 		for (const id of data.followers) {
+			if (!client.users.has(id)) return;
 			if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
 				embed: {
 					title: 'Followed suggestion has deleted!',
@@ -248,8 +252,8 @@ module.exports = {
 				description: data.suggestion,
 				color: colorToSignedBit("#00FFFF"),
 				author: {
-					name: `${language == "english" ? `New suggestion` : `Yeni öneri`} - ${author.username}#${author.discriminator}`,
-					icon_url: author.avatarURL || author.defaultAvatarURL
+					name: language == "english" ? `New suggestion - ${client.users.has(data.author) ? `${author.username}#${author.discriminator}` : message.embeds[0].author.name.split(' - ')[1]}` : `Yeni öneri - ${client.users.has(data.author) ? `${author.username}#${author.discriminator}` : message.embeds[0].author.name.split(' - ')[1]}`,
+					icon_url: client.users.has(data.author) ? author.avatarURL || author.defaultAvatarURL : message.embeds[0].author.icon_url
 				},
 				footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL},
 				image: data.attachment == null ? null : {url: data.attachment}
@@ -263,7 +267,9 @@ module.exports = {
 			db.set(`suggestion_${guild.id}_${sugid}.msgid`, msgg.id)
 			db.set(`suggestion_${guild.id}_${sugid}.channel`, msgg.channel.id)
 			db.set(`suggestion_${guild.id}_${sugid}.status`, 'new')
+			guild.fetchMembers({userIDs: data.followers})
 			for (const id of data.followers) {
+				if (!client.users.has(id)) return;
 				if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
 					embed: {
 						title: 'Followed suggestion has verified!',
@@ -298,7 +304,9 @@ module.exports = {
 			})
 			if (message != null) message.addReaction(`✅`)
 			db.set(`suggestion_${guild.id}_${sugid}.attachment`, typeof image == "string" ? image : image.url)
+			guild.fetchMembers({userIDs: data.followers})
 			for (const id of data.followers) {
+				if (!client.users.has(id)) return;
 				if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
 					embed: {
 						title: 'An image attached to a followed suggestion!',
