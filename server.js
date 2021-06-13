@@ -9,7 +9,7 @@ client.aliases = new Eris.Collection(undefined, undefined);
 const autoposter = require('topgg-autoposter')
 const autopost = new autoposter.AutoPoster(settings.dbltoken, client)
 const awaitingsuggestions = new Map()
-const version = "1.0.3";
+const version = "1.0.4";
 const {manageSuggestion, deleteSuggestion, sendSuggestion, verifySuggestion} = require('./functions')
 client.db = db
 
