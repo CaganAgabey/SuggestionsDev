@@ -220,6 +220,13 @@ client.on('messageDelete', async message => {
   }
 })
 
+client.on('guildDelete', async guild => {
+  const map = new Map(Object.entries(db.all())).keys();
+  for (const i of map) {
+    if (i.includes(guild.id)) db.delete(i)
+  }
+})
+
 client.on('error', async error => {
   console.log(error.stack)
 })

@@ -11,7 +11,7 @@ function sleep(ms) {
 }
 
 module.exports = {
-	manageSuggestion: (message, guild, sugid, type, client, language, args) => {
+	manageSuggestion: async (message, guild, sugid, type, client, language, args) => {
 		const db = client.db
 		const data = db.fetch(`suggestion_${guild.id}_${sugid}`);
 		if (!client.users.has(data.author)) client.guilds.get(guild.id).fetchMembers({userIDs: [ data.author ]})
@@ -80,7 +80,7 @@ module.exports = {
 			if (message != null) message.addReaction(`✅`)
 			guild.fetchMembers({userIDs: data.followers})
 			for (const id of data.followers) {
-				if (!client.users.has(id)) return;
+				if (!client.users.has(id) || !guild.members.has(id)) return;
 				if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
 					embed: {
 						title: `Followed suggestion has ${type.toLowerCase()}!`,
@@ -96,7 +96,7 @@ module.exports = {
 		})
 	},
 	
-	deleteSuggestion: (message, guild, sugid, client, language, args, msgdeleted, channelid) => {
+	deleteSuggestion: async (message, guild, sugid, client, language, args, msgdeleted, channelid) => {
 		const db = client.db
 		const data = db.fetch(`suggestion_${guild.id}_${sugid}`);
 		if (!client.users.has(data.author)) client.guilds.get(guild.id).fetchMembers({userIDs: [ data.author ]})
@@ -105,10 +105,12 @@ module.exports = {
 			guild.channels.get(channelid).getMessage(data.msgid).then(msg => msg.delete())
 		}
 		db.set(`suggestion_${guild.id}_${sugid}.status`, 'deleted')
+		db.set(`suggestion_${guild.id}_${sugid}.msgid`, 0)
+		db.set(`suggestion_${guild.id}_${sugid}.channel`, 0)
 		if (message != null) message.addReaction(`✅`)
 		guild.fetchMembers({userIDs: data.followers})
 		for (const id of data.followers) {
-			if (!client.users.has(id)) return;
+			if (!client.users.has(id) || !guild.members.has(id)) return;
 			if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
 				embed: {
 					title: 'Followed suggestion has deleted!',
@@ -123,7 +125,7 @@ module.exports = {
 		}
 	},
 	
-	sendSuggestion: (message, suggestion, guild, client, language, sendmessage) => {
+	sendSuggestion: async (message, suggestion, guild, client, language, sendmessage) => {
 		const db = client.db
 		if (!client.users.has(message.author.id)) client.guilds.get(guild.id).fetchMembers({userIDs: [ message.author.id ]})
 		const map = new Map(Object.entries(db.all()));
@@ -198,7 +200,19 @@ module.exports = {
 				}).then(async msgg => {
 					msgg.addReaction(`✅`)
 					msgg.addReaction(`❌`)
-					return db.set(`suggestion_${guild.id}_${oldsugssize + 1}.msgid`, msgg.id)
+					return db.set(`suggestion_${guild.id}_${oldsugssize + 1}`, {
+						status: 'awaiting approval',
+						msgid: msgg.id,
+						author: message.author.id,
+						suggestion,
+						timestamp: Date.now(),
+						channel: db.fetch(`reviewchannel_${guild.id}`),
+						guild: guild.id,
+						approveemoji,
+						denyemoji,
+						followers: [ message.author.id ],
+						attachment: null
+					})
 				})
 			}
 		} else {
@@ -238,7 +252,7 @@ module.exports = {
 		}
 	},
 	
-	verifySuggestion: (message, guild, client, language) => {
+	verifySuggestion: async (message, guild, client, language) => {
 		const db = client.db
 		const sugid = Number(message.embeds[0].title.replace('Suggestion #', '').replace(' (awaiting approval)', '').replace('Öneri #', '').replace(' (doğrulama bekliyor)', ''))
 		const data = db.fetch(`suggestion_${guild.id}_${sugid}`)
@@ -255,7 +269,10 @@ module.exports = {
 					name: language == "english" ? `New suggestion - ${client.users.has(data.author) ? `${author.username}#${author.discriminator}` : message.embeds[0].author.name.split(' - ')[1]}` : `Yeni öneri - ${client.users.has(data.author) ? `${author.username}#${author.discriminator}` : message.embeds[0].author.name.split(' - ')[1]}`,
 					icon_url: client.users.has(data.author) ? author.avatarURL || author.defaultAvatarURL : message.embeds[0].author.icon_url
 				},
-				footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL},
+				footer: {
+					text: client.user.username,
+					icon_url: client.user.avatarURL || client.user.defaultAvatarURL
+				},
 				image: data.attachment == null ? null : {url: data.attachment}
 			}
 		}).then(async msgg => {
@@ -269,7 +286,7 @@ module.exports = {
 			db.set(`suggestion_${guild.id}_${sugid}.status`, 'new')
 			guild.fetchMembers({userIDs: data.followers})
 			for (const id of data.followers) {
-				if (!client.users.has(id)) return;
+				if (!client.users.has(id) || !guild.members.has(id)) return;
 				if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
 					embed: {
 						title: 'Followed suggestion has verified!',
@@ -280,12 +297,12 @@ module.exports = {
 							icon_url: client.user.avatarURL || client.user.defaultAvatarURL
 						}
 					}
-				}))
+				})).catch(async e => console.log(`Someone's dm is closed (${e})`))
 			}
 		})
 	},
 	
-	attachImage: (message, guild, sugid, image, client, language) => {
+	attachImage: async (message, guild, sugid, image, client, language) => {
 		const db = client.db
 		const data = db.fetch(`suggestion_${guild.id}_${sugid}`)
 		if (!client.users.has(data.author)) client.guilds.get(guild.id).fetchMembers({userIDs: [ data.author ]})
@@ -306,7 +323,7 @@ module.exports = {
 			db.set(`suggestion_${guild.id}_${sugid}.attachment`, typeof image == "string" ? image : image.url)
 			guild.fetchMembers({userIDs: data.followers})
 			for (const id of data.followers) {
-				if (!client.users.has(id)) return;
+				if (!client.users.has(id) || !guild.members.has(id)) return;
 				if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
 					embed: {
 						title: 'An image attached to a followed suggestion!',
@@ -318,7 +335,7 @@ module.exports = {
 						},
 						image: {url: typeof image == "string" ? image : image.url}
 					}
-				}))
+				})).catch(async e => console.log(`Someone's dm is closed (${e})`))
 			}
 		})
 	}
