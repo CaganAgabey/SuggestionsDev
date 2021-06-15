@@ -9,7 +9,7 @@ client.aliases = new Eris.Collection(undefined, undefined);
 const autoposter = require('topgg-autoposter')
 const autopost = new autoposter.AutoPoster(settings.dbltoken, client)
 const awaitingsuggestions = new Map()
-const version = "1.0.4";
+const version = "1.0.5";
 const {manageSuggestion, deleteSuggestion, sendSuggestion, verifySuggestion} = require('./functions')
 client.db = db
 
@@ -22,14 +22,11 @@ function colorToSignedBit(s) {
 }
 
 fs.readdir("./commands/", async (err, files) => {
-  if (err) console.log(err);
-  if (!files) return console.log("Unable to find commands.");
   const jsfile = files.filter(f => f.split(".").pop() == "js");
-  if (jsfile.length <= 0) {
+  if (jsfile.length <= 0 || err || !files) {
     console.log("Unable to find commands.");
-    return;
+    return process.exit(0)
   }
-  
   for (const f of jsfile) {
     const props = require(`./commands/${f}`);
     console.log(`${f} loaded`);
@@ -38,7 +35,6 @@ fs.readdir("./commands/", async (err, files) => {
       client.aliases.set(aliase, props)
     }
   }
-  ;
   console.log("All commands have been loaded successfully.")
 });
 
@@ -50,8 +46,8 @@ client.once('ready', async () => {
   for (const i of map) {
     if (i.startsWith(`suggestion_`)) {
       if (!client.guilds.has(db.fetch(`${i}.guild`))) db.delete(i)
-      else if (!client.guilds.get(db.fetch(`${i}.guild`)).channels.has(db.fetch(`${i}.guild`))) db.delete(i)
-      else if (Date.now() - db.fetch(`${i}.timestamp`) <= 2592000000) client.guilds.get(db.fetch(`${i}.guild`)).channels.get(db.fetch(`${i}.channel`)).getMessage(db.fetch(`${i}.msgid`)).catch(e => db.delete(i))
+      else if (!client.guilds.get(db.fetch(`${i}.guild`)).channels.has(db.fetch(`${i}.channel`))) db.delete(i)
+      else if (Date.now() - db.fetch(`${i}.timestamp`) <= 2592000000) client.guilds.get(db.fetch(`${i}.guild`)).channels.get(db.fetch(`${i}.channel`)).getMessage(db.fetch(`${i}.msgid`))
     }
   }
 });
@@ -63,14 +59,15 @@ client.on("messageCreate", async message => {
   if (!message.content.startsWith(prefix)) return;
   const messageArray = message.content.split('  ').join(' ').split(" ");
   const cmd = messageArray[0];
+  let commandfile = client.commands.get(cmd.slice(prefix.length));
+  if (!commandfile) commandfile = client.aliases.get(cmd.slice(prefix.length))
+  if (!commandfile) return;
   const args = messageArray.slice(1);
   const guild = client.guilds.get(message.guildID)
   guild.fetchMembers({userIDs: [ client.user.id ]})
   const guildme = guild.members.get(client.user.id)
   if (!guildme.permissions.has('sendMessages')) return message.author.getDMChannel().then(ch => ch.createMessage(`That bot doesn't have send messages permission in this guild.`))
   if (!guildme.permissions.has('manageMessages') || !guildme.permissions.has('embedLinks') || !guildme.permissions.has('addReactions')) return message.channel.createMessage(`The bot should have Manage Messages, Embed Links and Add Reactions permissions in order to work properly.`)
-  let commandfile = client.commands.get(cmd.slice(prefix.length));
-  if (!commandfile) commandfile = client.aliases.get(cmd.slice(prefix.length))
   if (commandfile) commandfile.run(client, message, args);
 })
 
@@ -227,9 +224,7 @@ client.on('guildDelete', async guild => {
   }
 })
 
-client.on('error', async error => {
-  console.log(error.stack)
-})
+client.on('error', async error => console.log(error.stack))
 
 client.connect();
 
