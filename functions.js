@@ -105,8 +105,8 @@ module.exports = {
 			guild.channels.get(channelid).getMessage(data.msgid).then(msg => msg.delete())
 		}
 		db.set(`suggestion_${guild.id}_${sugid}.status`, 'deleted')
-		db.set(`suggestion_${guild.id}_${sugid}.msgid`, 0)
-		db.set(`suggestion_${guild.id}_${sugid}.channel`, 0)
+		db.set(`suggestion_${guild.id}_${sugid}.msgid`, 1)
+		db.set(`suggestion_${guild.id}_${sugid}.channel`, 1)
 		if (message != null) message.addReaction(`✅`)
 		guild.fetchMembers({userIDs: data.followers})
 		for (const id of data.followers) {

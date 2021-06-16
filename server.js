@@ -114,7 +114,7 @@ client.on('guildCreate', async guild => {
     let lasttimestamp = 0;
     for (const ch of channels) {
       ch.getMessages({limit: 1}).then(async msg => {
-        if (msg[0].timestamp > lasttimestamp) {
+        if (msg[0] && msg[0].timestamp > lasttimestamp) {
           lasttimestamp = msg[0].timestamp
           channel = ch
         }
@@ -125,7 +125,7 @@ client.on('guildCreate', async guild => {
     let lasttimestamp = 0;
     for (const ch of guild.channels.filter(c => c.type == 0)) {
       ch.getMessages({limit: 1}).then(async msg => {
-        if (msg[0].timestamp > lasttimestamp) {
+        if (msg[0] && msg[0].timestamp > lasttimestamp) {
           lasttimestamp = msg[0].timestamp
           channel = ch
         }
@@ -185,7 +185,7 @@ client.on('messageReactionAdd', async (message, emoji, user) => {
 
 client.on('messageReactionAdd', async (message, emoji, user) => {
   if (!db.has(`reviewchannel_${message.guildID}`)) return;
-  if (db.fetch(`reviewchannel_${guild.id}`) != message.channel.id) return
+  if (db.fetch(`reviewchannel_${message.guildID}`) != message.channel.id) return
   if (!client.users.has(user.id)) client.guilds.get(message.guildID).fetchMembers({userIDs: [ user.id ]})
   if (client.users.get(user.id).bot) return;
   const dil = db.fetch(`dil_${message.guildID}`) || "english";
