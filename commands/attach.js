@@ -22,7 +22,7 @@ module.exports.run = async (client, message, args) => {
 		const image = message.attachments[0] || args[1];
 		if (!image) return message.channel.createMessage(`You must send an image or an image link.`)
 		if (args[1] && !args[1].includes('https://') && !args[1].includes('http://')) return message.channel.createMessage(`Invalid image link.`)
-		if (db.has(`suggestion_${message.guildID}_${sugid}.attachment`) && (db.fetch(`suggestion_${message.guildID}_${sugid}.attachment`) == args[1] || db.fetch(`suggestion_${message.guildID}_${sugid}.attachment`) == image.url)) return message.channel.createMessage(`This suggestion's attached image is already this image.`)
+		if (db.has(`suggestion_${message.guildID}_${sugid}.attachment`) && db.fetch(`suggestion_${message.guildID}_${sugid}.attachment`) != null && (db.fetch(`suggestion_${message.guildID}_${sugid}.attachment`) == args[1] || db.fetch(`suggestion_${message.guildID}_${sugid}.attachment`) == image.url)) return message.channel.createMessage(`This suggestion's attached image is already this image.`)
 		attachImage(message, message.channel.guild, sugid, image, client, dil)
 	}
 	
@@ -38,7 +38,7 @@ module.exports.run = async (client, message, args) => {
         const image = message.attachments[0] || args[1];
         if (!image) return message.channel.createMessage(`Bir resim atmalısın veya resim linki belirtmelisin.`)
 		if (args[1] && !args[1].includes('https://') && !args[1].includes('http://')) return message.channel.createMessage(`Geçersiz resim linki.`)
-		if (db.has(`suggestion_${message.guildID}_${sugid}.attachment`) && (db.fetch(`suggestion_${message.guildID}_${sugid}.attachment`) == args[1] || db.fetch(`suggestion_${message.guildID}_${sugid}.attachment`) == image.url)) return message.channel.createMessage(`Bu öneriye eklenmiş resim zaten bu resim.`)
+		if (db.has(`suggestion_${message.guildID}_${sugid}.attachment`) && db.fetch(`suggestion_${message.guildID}_${sugid}.attachment`) != null && (db.fetch(`suggestion_${message.guildID}_${sugid}.attachment`) == args[1] || db.fetch(`suggestion_${message.guildID}_${sugid}.attachment`) == image.url)) return message.channel.createMessage(`Bu öneriye eklenmiş resim zaten bu resim.`)
         attachImage(message, message.channel.guild, sugid, image, client, dil)
     }
 }
