@@ -77,7 +77,15 @@ module.exports = {
 				})
 			}
 			db.set(`suggestion_${guild.id}_${sugid}.status`, type.toLowerCase())
-			if (message != null) message.addReaction(`✅`)
+			if (message != null) message.channel.createMessage({
+				content: language == "english" ? `Successful!` : `Başarılı!`,
+				messageReference: {
+					channelID: message.channel.id,
+					messageID: message.id,
+					guildID: message.guildID,
+					failIfNotExists: false
+				}
+			})
 			guild.fetchMembers({userIDs: data.followers})
 			for (const id of data.followers) {
 				if (!client.users.has(id) || !guild.members.has(id)) return;
@@ -107,7 +115,15 @@ module.exports = {
 		db.set(`suggestion_${guild.id}_${sugid}.status`, 'deleted')
 		db.set(`suggestion_${guild.id}_${sugid}.msgid`, 1)
 		db.set(`suggestion_${guild.id}_${sugid}.channel`, 1)
-		if (message != null) message.addReaction(`✅`)
+		if (message != null) message.channel.createMessage({
+			content: language == "english" ? `Successful!` : `Başarılı!`,
+			messageReference: {
+				channelID: message.channel.id,
+				messageID: message.id,
+				guildID: message.guildID,
+				failIfNotExists: false
+			}
+		})
 		guild.fetchMembers({userIDs: data.followers})
 		for (const id of data.followers) {
 			if (!client.users.has(id) || !guild.members.has(id)) return;
@@ -176,7 +192,8 @@ module.exports = {
 							approveemoji,
 							denyemoji,
 							followers: [ message.author.id ],
-							attachment: null
+							attachment: null,
+							comments: []
 						})
 						await sleep(5000)
 						return msg.delete()
@@ -211,7 +228,8 @@ module.exports = {
 						approveemoji,
 						denyemoji,
 						followers: [ message.author.id ],
-						attachment: null
+						attachment: null,
+						comments: []
 					})
 				})
 			}
@@ -246,7 +264,8 @@ module.exports = {
 					approveemoji,
 					denyemoji,
 					followers: [ message.author.id ],
-					attachment: null
+					attachment: null,
+					comments: []
 				})
 			})
 		}
@@ -319,7 +338,15 @@ module.exports = {
 					image: {url: typeof image == "string" ? image : image.url}
 				}
 			})
-			if (message != null) message.addReaction(`✅`)
+			if (message != null) message.channel.createMessage({
+				content: language == "english" ? `Successful!` : `Başarılı!`,
+				messageReference: {
+					channelID: message.channel.id,
+					messageID: message.id,
+					guildID: message.guildID,
+					failIfNotExists: false
+				}
+			})
 			db.set(`suggestion_${guild.id}_${sugid}.attachment`, typeof image == "string" ? image : image.url)
 			guild.fetchMembers({userIDs: data.followers})
 			for (const id of data.followers) {
