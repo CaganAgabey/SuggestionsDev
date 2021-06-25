@@ -1,6 +1,7 @@
 const arkdb = require('ark.db')
 const Eris = require("eris");
 const awaitingsuggestions = new Map()
+const corefunctions = require('./functions')
 
 function colorToSignedBit(s) {
 	return (parseInt(s.substr(1), 16) << 8) / 256;
@@ -265,7 +266,7 @@ module.exports = {
 					denyemoji,
 					followers: [ message.author.id ],
 					attachment: null,
-					comments: []
+					comments: [{author: 384859494556, timestamp: 458585589945945, commentid: 1, comment: 'anan'}]
 				})
 			})
 		}
@@ -361,6 +362,129 @@ module.exports = {
 							icon_url: client.user.avatarURL || client.user.defaultAvatarURL
 						},
 						image: {url: typeof image == "string" ? image : image.url}
+					}
+				})).catch(async e => console.log(`Someone's dm is closed (${e})`))
+			}
+		})
+	},
+	
+	loadComments: (guild, sugid, client, language) => {
+		const db = client.db
+		const fields = []
+		const array = db.fetch(`suggestion_${guild.id}_${sugid}.comments`)
+		array.sort((a, b) => a.commentid - b.commentid)
+		for (const i of array) {
+			guild.fetchMembers({userIDs: [i.author]})
+			fields.push({name: language == "english" ? `Comment #${i.commentid}, from ${client.users.get(i.author).username}${client.users.get(i.author).discriminator}` : `Yorum #${i.commentid}, ${client.users.get(i.author).username}${client.users.get(i.author).discriminator} tarafından`, value: i.comment})
+		}
+		return fields
+	},
+	
+	addComment: async (message, guild, sugid, comment, commenter, client, language, senddm) => {
+		const db = client.db
+		const data = db.fetch(`suggestion_${guild.id}_${sugid}`)
+		if (!client.users.has(data.author)) client.guilds.get(guild.id).fetchMembers({userIDs: [ data.author ]})
+		if (!client.users.has(commenter.id)) client.guilds.get(guild.id).fetchMembers({userIDs: [ commenter.id ]})
+		const author = client.users.get(commenter.id)
+		const suggestionauthor = client.users.get(data.author)
+		let commentid = 1
+		for (const i of db.fetch(`suggestion_${guild.id}_${sugid}.comments`)) {
+			if (i.commentid + 1 > commentid) commentid = i.commentid + 1
+		}
+		db.push(`suggestion_${guild.id}_${sugid}.comments`, {
+			author: author.id,
+			timestamp: Date.now(),
+			commentid,
+			comment
+		})
+		guild.channels.get(data.channel).getMessage(data.msgid).then(async msg => {
+			msg.edit({
+				embed: {
+					title: msg.embeds[0].title,
+					description: msg.embeds[0].description,
+					color: msg.embeds[0].color,
+					author: msg.embeds[0].author,
+					footer: msg.embeds[0].footer,
+					fields: corefunctions.loadComments(guild, sugid, client, language),
+					image: msg.embeds[0].image
+				}
+			})
+			if (message != null) message.channel.createMessage({
+				content: language == "english" ? `Successful!` : `Başarılı!`,
+				messageReference: {
+					channelID: message.channel.id,
+					messageID: message.id,
+					guildID: message.guildID,
+					failIfNotExists: false
+				}
+			})
+			guild.fetchMembers({userIDs: data.followers})
+			for (const id of data.followers) {
+				if (!client.users.has(id) || !guild.members.has(id)) return;
+				if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
+					embed: {
+						title: 'A comment made to a followed suggestion!',
+						description: `A comment made to followed suggestion that in \`${guild.name}\`.\n**Suggestion number: \`#${sugid}\`\n**Suggestion author:** ${suggestionauthor.username}#${suggestionauthor.discriminator}\n**Suggestion:** \`\`\`${db.fetch(`suggestion_${guild.id}_${sugid}.suggestion`)}\`\`\`\n**Comment number: \`#${commentid}\`\n**Comment author:** ${author.username}#${author.discriminator}\n**Comment:** \`\`\`${comment}\`\`\``,
+						color: 6579300,
+						footer: {
+							text: `You can disable these DMs with using .senddm command in a guild.`,
+							icon_url: client.user.avatarURL || client.user.defaultAvatarURL
+						}
+					}
+				})).catch(async e => console.log(`Someone's dm is closed (${e})`))
+			}
+		})
+	},
+	
+	deleteComment: async (message, guild, sugid, commentid, client, language) => {
+		const db = client.db
+		const data = db.fetch(`suggestion_${guild.id}_${sugid}`)
+		let commentdata
+		const array = db.fetch(`suggestion_${guild.id}_${sugid}.comments`)
+		for (const i of array) {
+			if (i.commentid == commentid) {
+				commentdata = i
+				array.splice(array.indexOf(i), 1)
+			}
+		}
+		db.set(`suggestion_${guild.id}_${sugid}.comments`, array)
+		if (!client.users.has(data.author)) client.guilds.get(guild.id).fetchMembers({userIDs: [ data.author ]})
+		if (!client.users.has(commentdata.author)) client.guilds.get(guild.id).fetchMembers({userIDs: [ commentdata.author ]})
+		const author = client.users.get(commentdata.author)
+		const suggestionauthor = client.users.get(data.author)
+		guild.channels.get(data.channel).getMessage(data.msgid).then(async msg => {
+			msg.edit({
+				embed: {
+					title: msg.embeds[0].title,
+					description: msg.embeds[0].description,
+					color: msg.embeds[0].color,
+					author: msg.embeds[0].author,
+					footer: msg.embeds[0].footer,
+					fields: corefunctions.loadComments(guild, sugid, client, language),
+					image: msg.embeds[0].image
+				}
+			})
+			if (message != null) message.channel.createMessage({
+				content: language == "english" ? `Successful!` : `Başarılı!`,
+				messageReference: {
+					channelID: message.channel.id,
+					messageID: message.id,
+					guildID: message.guildID,
+					failIfNotExists: false
+				}
+			})
+			guild.fetchMembers({userIDs: data.followers})
+			for (const id of data.followers) {
+				if (!client.users.has(id) || !guild.members.has(id)) return;
+				if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
+					embed: {
+						title: 'A comment made to a followed suggestion!',
+						description: `A comment made to followed suggestion that in \`${guild.name}\`.\n**Suggestion number: \`#${sugid}\`\n**Suggestion author:** ${suggestionauthor.username}#${suggestionauthor.discriminator}\n**Suggestion:** \`\`\`${db.fetch(`suggestion_${guild.id}_${sugid}.suggestion`)}\`\`\`\n**Comment number: \`#${commentid}\`\n**Comment author:** ${author.username}#${author.discriminator}\n**Comment:** \`\`\`${commentdata.comment}\`\`\``,
+						color: 6579300,
+						footer: {
+							text: `You can disable these DMs with using .senddm command in a guild.`,
+							icon_url: client.user.avatarURL || client.user.defaultAvatarURL
+						}
 					}
 				})).catch(async e => console.log(`Someone's dm is closed (${e})`))
 			}
