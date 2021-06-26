@@ -48,7 +48,7 @@ module.exports.run = async (client, message, args) => {
 		if (db.has(`autodeny_${message.guildID}`) && db.fetch(`autodeny_${message.guildID}`) == sayi) return message.channel.createMessage(`Bu sunucunun otomatik reddetme oylayıcı sayısı zaten ${sayi}.`)
 		
 		db.set(`autodeny_${message.guildID}`, sayi)
-		message.channel.createMessage(`Başarıyla otomatik reddetme oylayıcı sayısı ${sayi} yapıldı. Bundan sonra herhangi bir önerinin red emojisinin oylayıcı sayısı ${sayi} geçerse, bu öneri otomatik olarak reddedilir.`)
+		message.channel.createMessage(`Başarıyla otomatik red tepki sayısı ${sayi} yapıldı. Bundan sonra herhangi bir önerinin red emojisinin oylayıcı sayısı ${sayi} geçerse, bu öneri otomatik olarak reddedilecek.`)
 	}
 }
 

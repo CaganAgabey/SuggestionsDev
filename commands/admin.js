@@ -45,13 +45,12 @@ module.exports.run = async (client, message, args) => {
 	}
 	
 	if (dil == "turkish") {
-		
 		const prefix = db.fetch(`prefix_${message.guildID}`) || ".";
 		const helpcommands = client.commands.filter(prop => prop.help.category == "admin" && prop.help.name != "help");
 		if (helpcommands.length == 0) return message.channel.createMessage(`Bu kategoride komut yok.`)
-		const helpcommandsmap = helpcommands.map(p => '<:rightarrow:709539888411836526> **' + prefix + p.help.name + '** ' + p.help.descriptiontr + `\n`).join('');
+		const helpcommandsmap = helpcommands.map(p => '<:rightarrow:709539888411836526> **' + prefix + p.help.nametr + '** ' + p.help.descriptiontr + `\n`).join('');
 		if (helpcommandsmap.length > 2000) {
-			const helpcommandsmap2 = helpcommands.map(p => '<:rightarrow:709539888411836526> **' + prefix + p.help.name + '** ' + p.help.descriptiontr.length > 50 ? p.help.descriptiontr.slice(0, 50) + `...` : p.help.descriptiontr + `\n`).join('');
+			const helpcommandsmap2 = helpcommands.map(p => '<:rightarrow:709539888411836526> **' + prefix + p.help.nametr + '** ' + p.help.descriptiontr.length > 50 ? p.help.descriptiontr.slice(0, 50) + `...` : p.help.descriptiontr + `\n`).join('');
 			message.channel.createMessage({
 				embed: {
 					title: '__**Yönetici Komutları**__',

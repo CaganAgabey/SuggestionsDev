@@ -136,7 +136,7 @@ client.on('guildCreate', async guild => {
   channel.createMessage({
     embed: {
       title: '**__Thanks for adding Suggestions bot!__**',
-      description: `This bot allows you to manage your suggestions in server easily. You can see the possible commands with **.help** command.\nThis bot won't work if you don't set any suggestion channel.\n \n**You can get help about the bot setup** With **.setupinfo** command.\n \n**This bot made by** ${client.users.get('343412762522812419').username}#${client.users.get('343412762522812419').discriminator}\n \n**If you have any cool idea for bot** Use **.botsuggest** command to send suggestions to owner.\n \n**Note:** In order to work properly, bot should have Manage Messages, Embed Links and Add Reactions permission.\n**Note for Turkish:** Eğer botu Türkçe kullanmak istiyorsanız \`.language turkish\` komuduyla botu Türkçe yapabilirsiniz, Türkçe yaptıktan sonra \`.kurulumbilgi\` ile bilgi alabilirsiniz`,
+      description: `This bot allows you to manage your suggestions in server easily. You can see the possible commands with **.help** command.\nThis bot won't work if you don't set any suggestion channel.\n \n**You can get help about the bot setup** With **.setupinfo** command.\n \n**This bot made by** ${client.users.get('343412762522812419').username}#${client.users.get('343412762522812419').discriminator}\n \n**If you have any cool idea for bot** Use **.botsuggest** command to send suggestions to owner.\n \n**Note:** In order to work properly, bot should have Manage Messages, Embed Links and Add Reactions permission.\n \n**Note for Turkish:** Eğer botu Türkçe kullanmak istiyorsanız \`.language turkish\` komuduyla botu Türkçe yapabilirsiniz, Türkçe yaptıktan sonra \`.kurulumbilgi\` ile bilgi alabilirsiniz`,
       color: colorToSignedBit("#2F3136"),
       author: {name: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL},
       footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}
@@ -152,25 +152,20 @@ client.on('messageReactionAdd', async (message, emoji, user) => {
   if (db.has(`suggestionchannel_${message.guildID}`) && db.fetch(`suggestionchannel_${message.guildID}`) != message.channel.id) return;
   client.guilds.get(message.guildID).channels.get(message.channel.id).getMessage(message.id).then(async msg => {
     const sugid = Number(msg.embeds[0].title.replace('Suggestion #', '').replace('Öneri #', ''))
-    const sugname = `suggestion_${message.guildID}_${sugid}`
+    const sugname = `suggestion_${msg.guildID}_${sugid}`
     if (!db.has(sugname)) return;
     const dil = db.fetch(`dil_${msg.guildID}`) || "english";
     msg.getReaction(db.fetch(`${sugname}.approveemoji`)).then(async rec => {
       msg.getReaction(db.fetch(`${sugname}.denyemoji`)).then(async recc => {
-        if (db.has(`ownervoting_${message.guildID}`) && rec.filter(x => x.id == db.fetch(`${sugname}.author`)).length != 0) {
+        if (db.has(`ownervoting_${message.guildID}`) && db.fetch(`${sugname}.author`) == user.id && (rec.filter(x => x.id == user.id).length != 0 || recc.filter(x => x.id == user.id).length != 0)) {
+          client.users.get(user.id).getDMChannel().then(async ch => ch.createMessage(`You can't vote to your suggestion in this server.`))
           msg.removeReaction(db.fetch(`${sugname}.approveemoji`), db.fetch(`${sugname}.author`))
-          return client.users.get(user.id).getDMChannel().then(async ch => ch.createMessage(`You can't vote to your suggestion in this server.`))
+          return msg.removeReaction(db.fetch(`${sugname}.denyemoji`), db.fetch(`${sugname}.author`))
         }
-        if (db.has(`ownervoting_${message.guildID}`) && recc.filter(x => x.id == db.fetch(`${sugname}.author`)).length != 0) {
-          msg.removeReaction(db.fetch(`${sugname}.denyemoji`), db.fetch(`${sugname}.author`))
-          return client.users.get(user.id).getDMChannel().then(async ch => ch.createMessage(`You can't vote to your suggestion in this server.`))
-        }
-        if (db.has(`multiplevoting_${message.guildID}`) && rec.filter(x => x.id == user.id).length != 0) {
-          if (recc.filter(x => x.id == user.id).length != 0) {
-            msg.removeReaction(db.fetch(`${sugname}.approveemoji`), user.id)
-            msg.removeReaction(db.fetch(`${sugname}.denyemoji`), user.id)
-            return client.users.get(user.id).getDMChannel().then(async ch => ch.createMessage(`Multiple voting is not allowed in this server. You must vote in only one reaction.`))
-          }
+        if (db.has(`multiplevoting_${message.guildID}`) && rec.find(x => x.id == user.id) && recc.find(x => x.id == user.id)) {
+          client.users.get(user.id).getDMChannel().then(async ch => ch.createMessage(`Multiple voting is not allowed in this server. You must vote in only one reaction.`))
+          msg.removeReaction(db.fetch(`${sugname}.approveemoji`), user.id)
+          return msg.removeReaction(db.fetch(`${sugname}.denyemoji`), user.id)
         }
         if (db.has(`autoapprove_${msg.guildID}`) && rec.length - 1 >= db.fetch(`autoapprove_${msg.guildID}`)) {
           manageSuggestion(null, client.guilds.get(msg.guildID), sugid, 'Approved', client, dil, [])

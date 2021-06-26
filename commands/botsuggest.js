@@ -20,7 +20,7 @@ module.exports.run = async (client, message, args) => {
 				description: sug + `\n \n**Sender:** ${message.author.id}\n**Sended in guild:** ${message.guildID}\n**Sended in channel:** ${message.channel.id}`
 			}
 		}))
-		message.channel.createMessage(`Suggestion sent successfully!`)
+		message.channel.createMessage(`Suggestion sent to bot owner successfully!`)
 	}
 	
 	if (dil == "turkish") {
@@ -34,7 +34,7 @@ module.exports.run = async (client, message, args) => {
 				description: sug + `\n \n**Sender:** ${message.author.id}\n**Sended in guild:** ${message.guildID}\n**Sended in channel:** ${message.channel.id}`
 			}
 		}))
-		message.channel.createMessage(`Öneri başarıyla gönderildi!`)
+		message.channel.createMessage(`Öneri başarıyla bot sahibine gönderildi!`)
 	}
 }
 

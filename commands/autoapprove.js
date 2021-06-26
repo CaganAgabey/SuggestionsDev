@@ -50,7 +50,7 @@ module.exports.run = async (client, message, args) => {
 		if (db.has(`autoapprove_${message.guildID}`) && db.fetch(`autoapprove_${message.guildID}`) == sayi) return message.channel.createMessage(`Bu sunucunun otomatik onay sayısı zaten ${sayi}.`)
 		
 		db.set(`autoapprove_${message.guildID}`, sayi)
-		message.channel.createMessage(`Başarıyla otomatik onay sayısı ${sayi} yapıldı. Bundan sonra herhangi bir önerinin onay emojisinin oylayıcı sayısı ${sayi} geçerse, bu öneri otomatik onaylanacaktır.`)
+		message.channel.createMessage(`Başarıyla otomatik onay tepki sayısı ${sayi} yapıldı. Bundan sonra herhangi bir önerinin onay emojisinin oylayıcı sayısı ${sayi} geçerse, bu öneri otomatik onaylanacak.`)
 	}
 }
 

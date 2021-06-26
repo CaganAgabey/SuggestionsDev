@@ -159,7 +159,7 @@ module.exports = {
 		}
 		let denyemoji = `👎`
 		if (db.has(`customdeny_${guild.id}`)) {
-			if (/\p{Emoji}/u.test(db.fetch(`customdeny_${guild.id}`)) == true) approveemoji = db.fetch(`customdeny_${guild.id}`)
+			if (/\p{Emoji}/u.test(db.fetch(`customdeny_${guild.id}`)) == true) denyemoji = db.fetch(`customdeny_${guild.id}`)
 			else if (guild.emojis.filter(x => x.name == db.fetch(`customdeny_${guild.id}`).split(':')[0] && x.id == db.fetch(`customdeny_${guild.id}`).split(':')[1]).length != 0) denyemoji = db.fetch(`customdeny_${guild.id}`)
 		}
 		if (db.has(`reviewchannel_${guild.id}`) && guild.channels.has(db.fetch(`reviewchannel_${guild.id}`))) {
@@ -355,7 +355,7 @@ module.exports = {
 				if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
 					embed: {
 						title: 'An image attached to a followed suggestion!',
-						description: `An image attached to followed suggestion that in \`${guild.name}\`.\n**Suggestion number: \`#${sugid}\`\n**Suggestion author:** ${author.username}#${author.discriminator}\n**Suggestion:** \`\`\`${db.fetch(`suggestion_${guild.id}_${sugid}.suggestion`)}\`\`\``,
+						description: `An image attached to followed suggestion that in \`${guild.name}\`.\n**Suggestion number:** \`#${sugid}\`\n**Suggestion author:** ${author.username}#${author.discriminator}\n**Suggestion:** \`\`\`${db.fetch(`suggestion_${guild.id}_${sugid}.suggestion`)}\`\`\``,
 						color: 6579300,
 						footer: {
 							text: `You can disable these DMs with using .senddm command in a guild.`,

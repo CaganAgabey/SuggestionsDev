@@ -22,18 +22,7 @@ if (dil == "turkish") {
   const helpcommands = client.commands.filter(prop => prop.help.category == "help" && prop.help.name != "help");
   if (helpcommands.length == 0) return message.channel.createMessage(`Bu kategoride herhangi bir komut yok.`)
   const helpcommandsmap = helpcommands.map(p => '<:rightarrow:709539888411836526> **' + prefix + p.help.nametr + '** ' + p.help.descriptiontr + `\n`).join('');
-  if (!db.has(`botcekilis`)) message.channel.createMessage({
-      embed: {
-        title: '__**Komutlar**__',
-        description: helpcommandsmap,
-        color: colorToSignedBit("#2F3136"),
-        footer: {
-          text: client.user.username,
-          icon_url: client.user.avatarURL || client.user.defaultAvatarURL
-        }
-      }
-    })
-    message.channel.createMessage({embed: {title: '__**Komutlar**__', description: helpcommandsmap, color: colorToSignedBit("#2F3136"), footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}}})
+  message.channel.createMessage({embed: {title: '__**Komutlar**__', description: helpcommandsmap, color: colorToSignedBit("#2F3136"), footer: {text: client.user.username, icon_url: client.user.avatarURL || client.user.defaultAvatarURL}}})
   }
 }
 
