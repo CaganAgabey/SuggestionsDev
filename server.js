@@ -1,7 +1,7 @@
 const settings = require("./settings.json")
 const Sharder = require('eris-sharder').Master;
 const sharder = new Sharder(settings.token, "/sharder.js", {
-  stats: false,
+  stats: true,
   debug: false,
   guildsPerShard: 250,
   name: "Suggestions",
@@ -12,4 +12,8 @@ const sharder = new Sharder(settings.token, "/sharder.js", {
   },
   clusterTimeout: 7
 });
+const arkdb = require('ark.db')
+const db = new arkdb.Database('./arkdb.json')
 const client = sharder.eris;
+
+sharder.on('stats', async stats => db.set(`totalservers`, stats.guilds))

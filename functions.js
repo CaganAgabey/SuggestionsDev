@@ -33,6 +33,11 @@ module.exports = {
 		displaytype = displaytype.replace('maybe', 'potential')
 		displaytype = displaytype.charAt(0).toUpperCase() + displaytype.slice(1)
 		guild.channels.get(data.channel).getMessage(data.msgid).then(msg => {
+			let comment = 0
+			if (args[1] && db.fetch(`suggestion_${guild.id}_${sugid}.comments`).length < 10) {
+				comment = args.slice(1).join(' ')
+				corefunctions.addComment(null, guild, sugid, args.slice(1).join(' '), message.author.id, client, language, false)
+			}
 			if (!db.has(`${type.toLowerCase()}channel_${guild.id}`) || db.fetch(`${type.toLowerCase()}channel_${guild.id}`) == msg.channel.id || !msg.channel.guild.channels.has(db.fetch(`${type.toLowerCase()}channel_${guild.id}`))) {
 				msg.edit({
 					embed: {
@@ -47,7 +52,7 @@ module.exports = {
 							text: client.user.username,
 							icon_url: client.user.avatarURL || client.user.defaultAvatarURL
 						},
-						fields: args[1] ? [ {name: language == "english" ? `${message.author.username}'s comment` : `${message.author.username} adlı yetkilinin yorumu`, value: args.slice(1).join(' ')} ] : [],
+						fields: corefunctions.loadComments(guild, sugid, client, language),
 						image: data.attachment == null ? null : {url: data.attachment}
 					}
 				})
@@ -68,7 +73,7 @@ module.exports = {
 							text: client.user.username,
 							icon_url: client.user.avatarURL || client.user.defaultAvatarURL
 						},
-						fields: args[1] ? [ {name: language == "english" ? `${message.author.username}'s comment` : `${message.author.username} adlı yetkilinin yorumu`, value: args.slice(1).join(' ')} ] : [],
+						fields: corefunctions.loadComments(guild, sugid, client, language),
 						image: data.attachment == null ? null : {url: data.attachment}
 					}
 				}).then(async msgg => {
@@ -93,7 +98,7 @@ module.exports = {
 				if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
 					embed: {
 						title: `Followed suggestion has ${type.toLowerCase()}!`,
-						description: `Followed suggestion that in \`${guild.name}\` has ${type.toLowerCase()}.\n**Suggestion number:** \`#${sugid}\`\n**Suggestion author:** ${author.username}#${author.discriminator}${args[1] ? `\n**Staff comment:** ${args.slice(1).join(' ')}` : ``}\n**Suggestion:** \`\`\`${data.suggestion}\`\`\``,
+						description: `Followed suggestion that in \`${guild.name}\` has ${type.toLowerCase()}.\n**Suggestion number:** \`#${sugid}\`\n**Suggestion author:** ${author.username}#${author.discriminator}${(comment == 1 ? `` : `\n**Staff comment:** ${comment}`)}\n**Suggestion:** \`\`\`${data.suggestion}\`\`\``,
 						color,
 						footer: {
 							text: `You can disable these DMs with using .senddm command in a guild.`,
@@ -266,7 +271,7 @@ module.exports = {
 					denyemoji,
 					followers: [ message.author.id ],
 					attachment: null,
-					comments: [{author: 384859494556, timestamp: 458585589945945, commentid: 1, comment: 'anan'}]
+					comments: []
 				})
 			})
 		}
@@ -375,7 +380,7 @@ module.exports = {
 		array.sort((a, b) => a.commentid - b.commentid)
 		for (const i of array) {
 			guild.fetchMembers({userIDs: [i.author]})
-			fields.push({name: language == "english" ? `Comment #${i.commentid}, from ${client.users.get(i.author).username}${client.users.get(i.author).discriminator}` : `Yorum #${i.commentid}, ${client.users.get(i.author).username}${client.users.get(i.author).discriminator} tarafından`, value: i.comment})
+			fields.push({name: language == "english" ? `Comment #${i.commentid} - ${client.users.get(i.author).username}#${client.users.get(i.author).discriminator}` : `Yorum #${i.commentid} - ${client.users.get(i.author).username}#${client.users.get(i.author).discriminator}`, value: i.comment})
 		}
 		return fields
 	},
@@ -384,8 +389,8 @@ module.exports = {
 		const db = client.db
 		const data = db.fetch(`suggestion_${guild.id}_${sugid}`)
 		if (!client.users.has(data.author)) client.guilds.get(guild.id).fetchMembers({userIDs: [ data.author ]})
-		if (!client.users.has(commenter.id)) client.guilds.get(guild.id).fetchMembers({userIDs: [ commenter.id ]})
-		const author = client.users.get(commenter.id)
+		if (!client.users.has(commenter)) client.guilds.get(guild.id).fetchMembers({userIDs: [ commenter ]})
+		const author = client.users.get(commenter)
 		const suggestionauthor = client.users.get(data.author)
 		let commentid = 1
 		for (const i of db.fetch(`suggestion_${guild.id}_${sugid}.comments`)) {
@@ -410,7 +415,7 @@ module.exports = {
 				}
 			})
 			if (message != null) message.channel.createMessage({
-				content: language == "english" ? `Successful!` : `Başarılı!`,
+				content: language == "english" ? `Successfully commented!` : `Başarıyla yorum yapıldı!`,
 				messageReference: {
 					channelID: message.channel.id,
 					messageID: message.id,
@@ -418,20 +423,22 @@ module.exports = {
 					failIfNotExists: false
 				}
 			})
-			guild.fetchMembers({userIDs: data.followers})
-			for (const id of data.followers) {
-				if (!client.users.has(id) || !guild.members.has(id)) return;
-				if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
-					embed: {
-						title: 'A comment made to a followed suggestion!',
-						description: `A comment made to followed suggestion that in \`${guild.name}\`.\n**Suggestion number: \`#${sugid}\`\n**Suggestion author:** ${suggestionauthor.username}#${suggestionauthor.discriminator}\n**Suggestion:** \`\`\`${db.fetch(`suggestion_${guild.id}_${sugid}.suggestion`)}\`\`\`\n**Comment number: \`#${commentid}\`\n**Comment author:** ${author.username}#${author.discriminator}\n**Comment:** \`\`\`${comment}\`\`\``,
-						color: 6579300,
-						footer: {
-							text: `You can disable these DMs with using .senddm command in a guild.`,
-							icon_url: client.user.avatarURL || client.user.defaultAvatarURL
+			if (senddm != false) {
+				guild.fetchMembers({userIDs: data.followers})
+				for (const id of data.followers) {
+					if (!client.users.has(id) || !guild.members.has(id)) return;
+					if (!db.has(`denydm_${id}`)) client.users.get(id).getDMChannel().then(async ch => ch.createMessage({
+						embed: {
+							title: 'A comment made to a followed suggestion!',
+							description: `A comment made to followed suggestion that in \`${guild.name}\`.\n**Suggestion number: \`#${sugid}\`\n**Suggestion author:** ${suggestionauthor.username}#${suggestionauthor.discriminator}\n**Suggestion:** \`\`\`${db.fetch(`suggestion_${guild.id}_${sugid}.suggestion`)}\`\`\`\n**Comment number: \`#${commentid}\`\n**Comment author:** ${author.username}#${author.discriminator}\n**Comment:** \`\`\`${comment}\`\`\``,
+							color: 6579300,
+							footer: {
+								text: `You can disable these DMs with using .senddm command in a guild.`,
+								icon_url: client.user.avatarURL || client.user.defaultAvatarURL
+							}
 						}
-					}
-				})).catch(async e => console.log(`Someone's dm is closed (${e})`))
+					})).catch(async e => console.log(`Someone's dm is closed (${e})`))
+				}
 			}
 		})
 	},
@@ -465,7 +472,7 @@ module.exports = {
 				}
 			})
 			if (message != null) message.channel.createMessage({
-				content: language == "english" ? `Successful!` : `Başarılı!`,
+				content: language == "english" ? `Successfully deleted the comment!` : `Başarıyla yorum silindi!`,
 				messageReference: {
 					channelID: message.channel.id,
 					messageID: message.id,

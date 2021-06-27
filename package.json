@@ -13,7 +13,8 @@
     "quick.db": "^7.1.3",
     "sodium-native": "3.2",
     "topgg-autoposter": "^2.0.0",
-    "zlib-sync": "^0.1.7"
+    "zlib-sync": "^0.1.7",
+    "eris-sharder": "^1.10.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

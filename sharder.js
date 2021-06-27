@@ -3,7 +3,7 @@ const Eris = require('eris');
 const fs = require('fs');
 const settings = require("./settings.json")
 const arkdb = require('ark.db');
-const db = new arkdb.Database()
+const db = new arkdb.Database('./arkdb.json')
 const awaitingsuggestions = new Map()
 const version = "1.1";
 const {manageSuggestion, deleteSuggestion, sendSuggestion, verifySuggestion} = require('./functions')
@@ -27,7 +27,7 @@ class Class extends Base {
 			return (parseInt(s.substr(1), 16) << 8) / 256;
 		}
 		
-		client.editStatus("online", {name: `.help | .invite | v1.1`, type: 5})
+		client.editStatus("online", {name: `.help | .invite | v${version}`, type: 5})
 		if (client.guilds.has('662632169277227009')) client.guilds.get('662632169277227009').fetchMembers({userIDs: [ "343412762522812419" ]})
 		
 		fs.readdir("commands", async (err, files) => {
