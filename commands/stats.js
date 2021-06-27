@@ -15,7 +15,7 @@ module.exports.run = async (client, message, args) => {
 		message.channel.createMessage({
 			embed: {
 				title: `**__Bot stats__**`,
-				description: `**Users (may not show correct number)** ${client.users.size}\n**Guilds** ${client.guilds.size}\n**If you want to support Suggestions** [Add bot](https://discord.com/api/oauth2/authorize?client_id=709351286922936362&permissions=8&scope=bot) **|** [Vote Suggestions bot](https://top.gg/bot/709351286922936362/vote)`,
+				description: `**Total shards** ${client.shardCount}\n**Guilds in this shard** ${client.guilds.size}\n**If you want to support Suggestions** [Add bot](https://discord.com/api/oauth2/authorize?client_id=709351286922936362&permissions=8&scope=bot) **|** [Vote Suggestions bot](https://top.gg/bot/709351286922936362/vote)`,
 				color: colorToSignedBit("#2F3136")
 			}
 		})
@@ -26,7 +26,7 @@ module.exports.run = async (client, message, args) => {
 		message.channel.createMessage({
 			embed: {
 				title: `**__Bot istatistikleri__**`,
-				description: `**Kullanıcılar (doğru sayıyı göstermeyebilir)** ${client.users.size}\n**Sunucular** ${client.guilds.size}\n**Suggestions'u desteklemek isterseniz** [Botu ekle](https://discord.com/api/oauth2/authorize?client_id=709351286922936362&permissions=8&scope=bot) **|** [Suggestions botu oyla](https://top.gg/bot/709351286922936362/vote)`,
+				description: `**Toplam shard sayısı** ${client.shardCount}\n**Bu sharddaki sunucu sayısı** ${client.guilds.size}\n**Suggestions'u desteklemek isterseniz** [Botu ekle](https://discord.com/api/oauth2/authorize?client_id=709351286922936362&permissions=8&scope=bot) **|** [Bota oy ver](https://top.gg/bot/709351286922936362/vote)`,
 				color: colorToSignedBit("#2F3136")
 			}
 		})

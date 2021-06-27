@@ -22,6 +22,8 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "devDependencies": {},
+  "devDependencies": {
+    "eris-sharder": "^1.10.0"
+  },
   "description": ""
 }
