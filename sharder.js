@@ -3,7 +3,7 @@ const Eris = require('eris');
 const fs = require('fs');
 const settings = require("./settings.json")
 const arkdb = require('ark.db');
-const db = new arkdb.Database('./arkdb.json')
+const db = new arkdb.Database()
 const awaitingsuggestions = new Map()
 const version = "1.1";
 const {manageSuggestion, deleteSuggestion, sendSuggestion, verifySuggestion} = require('./functions')
@@ -80,7 +80,7 @@ class Class extends Base {
 			const guildme = guild.members.get(client.user.id)
 			if (!guildme.permissions.has('sendMessages')) return message.author.getDMChannel().then(ch => ch.createMessage(`That bot doesn't have send messages permission in this guild.`))
 			if (!guildme.permissions.has('manageMessages') || !guildme.permissions.has('embedLinks') || !guildme.permissions.has('addReactions')) return message.channel.createMessage(`The bot should have Manage Messages, Embed Links and Add Reactions permissions in order to work properly.`)
-			sendSuggestion(message, message.content, guild, client, dil, true)
+			sendSuggestion(message, message.content.slice(0, 1024), guild, client, dil, true)
 			message.delete()
 		})
 		
@@ -153,27 +153,43 @@ class Class extends Base {
 			if (!message.guildID) return;
 			if (!db.has(`suggestionchannel_${message.guildID}`)) return;
 			if (db.has(`suggestionchannel_${message.guildID}`) && db.fetch(`suggestionchannel_${message.guildID}`) != message.channel.id) return;
+			console.log(emoji)
 			client.guilds.get(message.guildID).channels.get(message.channel.id).getMessage(message.id).then(async msg => {
 				const sugid = Number(msg.embeds[0].title.replace('Suggestion #', '').replace('Öneri #', ''))
 				const sugname = `suggestion_${msg.guildID}_${sugid}`
 				if (!db.has(sugname)) return;
 				const dil = db.fetch(`dil_${msg.guildID}`) || "english";
-				msg.getReaction(db.fetch(`${sugname}.approveemoji`)).then(async rec => {
-					msg.getReaction(db.fetch(`${sugname}.denyemoji`)).then(async recc => {
-						if (db.has(`ownervoting_${message.guildID}`) && db.fetch(`${sugname}.author`) == user.id && (rec.filter(x => x.id == user.id).length != 0 || recc.filter(x => x.id == user.id).length != 0)) {
-							client.users.get(user.id).getDMChannel().then(async ch => ch.createMessage(`You can't vote to your suggestion in this server.`))
-							msg.removeReaction(db.fetch(`${sugname}.approveemoji`), db.fetch(`${sugname}.author`))
-							return msg.removeReaction(db.fetch(`${sugname}.denyemoji`), db.fetch(`${sugname}.author`))
-						}
+				let react;
+				if (emoji.id) react = emoji.name + ':' + emoji.id
+				if (!emoji.id) react = emoji.name
+				let reacttype;
+				if (!db.has(`customapprove_${message.guildID}`) && react == `👍`) reacttype = 'approve'
+				if (!db.has(`customdeny_${message.guildID}`) && react == `👎`) reacttype = 'deny'
+				if (db.has(`customapprove_${message.guildID}`) && react == db.fetch(`customapprove_${message.guildID}`)) reacttype = 'approve'
+				if (db.has(`customdeny_${message.guildID}`) && react == db.fetch(`customdeny_${message.guildID}`)) reacttype = 'deny'
+				let otheremoji;
+				if (reacttype == 'approve') {
+					if (!db.has(`customdeny_${message.guildID}`)) otheremoji = `👎`
+					if (db.has(`customdeny_${message.guildID}`)) otheremoji = db.fetch(`customdeny_${message.guildID}`)
+				}
+				if (reacttype == 'deny') {
+					if (!db.has(`customapprove_${message.guildID}`)) otheremoji = `👍`
+					if (db.has(`customapprove_${message.guildID}`)) otheremoji = db.fetch(`customapprove_${message.guildID}`)
+				}
+				msg.getReaction(react).then(async rec => {
+					if (db.has(`ownervoting_${message.guildID}`) && db.fetch(`${sugname}.author`) == user.id && rec.find(x => x.id == user.id)) {
+						client.users.get(user.id).getDMChannel().then(async ch => ch.createMessage(`You can't vote to your suggestion in this server.`))
+						return msg.removeReaction(react, user.id)
+					}
+					msg.getReaction(otheremoji).then(async recc => {
 						if (db.has(`multiplevoting_${message.guildID}`) && rec.find(x => x.id == user.id) && recc.find(x => x.id == user.id)) {
 							client.users.get(user.id).getDMChannel().then(async ch => ch.createMessage(`Multiple voting is not allowed in this server. You must vote in only one reaction.`))
-							msg.removeReaction(db.fetch(`${sugname}.approveemoji`), user.id)
-							return msg.removeReaction(db.fetch(`${sugname}.denyemoji`), user.id)
+							return msg.removeReaction(react, user.id)
 						}
-						if (db.has(`autoapprove_${msg.guildID}`) && rec.length - 1 >= db.fetch(`autoapprove_${msg.guildID}`)) {
+						if (db.has(`autoapprove_${msg.guildID}`) && reacttype == 'approve' && rec.length - 1 >= db.fetch(`autoapprove_${msg.guildID}`)) {
 							return manageSuggestion(null, client.guilds.get(msg.guildID), sugid, 'Approved', client, dil, [])
 						}
-						if (db.has(`autodeny_${msg.guildID}`) && recc.length - 1 >= db.fetch(`autodeny_${msg.guildID}`)) {
+						if (db.has(`autodeny_${msg.guildID}`) && reacttype == 'deny' && rec.length - 1 >= db.fetch(`autodeny_${msg.guildID}`)) {
 							return manageSuggestion(null, client.guilds.get(msg.guildID), sugid, 'Denied', client, dil, [])
 						}
 					})
@@ -191,16 +207,8 @@ class Class extends Base {
 			if (!db.has(`staffrole_${guild.id}`) && !guild.members.get(user.id).permissions.has('manageMessages')) return;
 			if (db.has(`staffrole_${guild.id}`) && !guild.members.get(user.id).roles.some(r => db.fetch(`staffrole_${guild.id}`).includes(r)) && !guild.members.get(user.id).permissions.has('administrator')) return;
 			guild.channels.get(message.channel.id).getMessage(message.id).then(async msg => {
-				msg.getReaction(`✅`).then(async rec => {
-					if (rec.length - 1 >= 1) {
-						return verifySuggestion(msg, msg.channel.guild, client, dil)
-					}
-				})
-				msg.getReaction(`❌`).then(async rec => {
-					if (rec.length - 1 >= 1) {
-						return deleteSuggestion(null, client.guilds.get(msg.guildID), Number(msg.embeds[0].title.replace(`Öneri #`, ``).replace(`Suggestion #`, ``)), client, dil, [], false, db.fetch(`reviewchannel_${guild.id}`))
-					}
-				})
+				if (emoji.name == `✅`) return verifySuggestion(msg, msg.channel.guild, client, dil)
+				if (emoji.name == `❌`) return deleteSuggestion(null, client.guilds.get(msg.guildID), Number(msg.embeds[0].title.replace(`Öneri #`, ``).replace(`Suggestion #`, ``)), client, dil, [], false, db.fetch(`reviewchannel_${guild.id}`))
 			})
 		})
 		

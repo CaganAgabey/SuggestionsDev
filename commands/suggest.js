@@ -19,9 +19,9 @@ module.exports.run = async (client, message, args) => {
 		if (!args[0]) return message.channel.createMessage(`You must provide a suggestion.`)
 		if (message.channel.id == db.fetch(`suggestionchannel_${guild.id}`)) {
 			message.delete()
-			sendSuggestion(message, args.join(" "), guild, client, dil, true)
+			sendSuggestion(message, args.join(" ").slice(0, 1024), guild, client, dil, true)
 		} else {
-			sendSuggestion(message, args.join(" "), guild, client, dil, false)
+			sendSuggestion(message, args.join(" ").slice(0, 1024), guild, client, dil, false)
 			if (!db.has(`reviewchannel_${message.guildID}`)) {
 				message.channel.createMessage({
 					content: `Got it!`,
@@ -56,9 +56,9 @@ module.exports.run = async (client, message, args) => {
 		if (!args[0]) return message.channel.createMessage(`Bir öneri belirtmelisin.`)
 		if (message.channel.id == db.fetch(`suggestionchannel_${guild.id}`)) {
 			message.delete()
-			sendSuggestion(message, args.join(" "), guild, client, dil, true)
+			sendSuggestion(message, args.join(" ").slice(0, 1024), guild, client, dil, true)
 		} else {
-			sendSuggestion(message, args.join(" "), guild, client, dil, false)
+			sendSuggestion(message, args.join(" ").slice(0, 1024), guild, client, dil, false)
 			if (!db.has(`reviewchannel_${message.guildID}`)) {
 				message.channel.createMessage({
 					content: `Anlaşıldı!`,

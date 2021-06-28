@@ -24,8 +24,10 @@ module.exports.run = async (client, message, args) => {
 		if (!db.has(`suggestion_${message.guildID}_${sugid}`)) return message.channel.createMessage(`Can't find a suggestion with this suggestion number in this guild.`)
 		if (db.fetch(`suggestion_${message.guildID}_${sugid}.status`) == "awaiting approval") return message.channel.createMessage(`You must verify or delete this suggestion in review channel before using this command.`)
 		if (db.fetch(`suggestion_${message.guildID}_${sugid}.status`) == "deleted") return message.channel.createMessage(`This suggestion was deleted!`)
+		if (db.fetch(`suggestion_${message.guildID}_${sugid}.comments`).length >= 10) return message.channel.createMessage(`Comment limit on a suggestion is 10 comments per suggestions, a comment should be deleted before commenting this.`)
 		if (!args[1]) return message.channel.createMessage(`You must provide a comment.`)
-		addComment(message, guild, sugid, args.slice(1).join(' '), message.author.id, client, dil, true)
+		if (args.slice(1).join(' ').length > 512) return message.channel.createMessage(`Comment character limit is 512 characters.`)
+		addComment(message, guild, sugid, args.slice(1).join(' '), message.author.id, client, dil, true, true)
 	}
 	
 	if (dil == "turkish") {
@@ -40,8 +42,10 @@ module.exports.run = async (client, message, args) => {
 		if (!db.has(`suggestion_${message.guildID}_${sugid}`)) return message.channel.createMessage(`Bu sunucuda bu öneri numarasıyla herhangi bir öneri bulunamadı.`)
 		if (db.fetch(`suggestion_${message.guildID}_${sugid}.status`) == "awaiting approval") return message.channel.createMessage(`Bu komudu kullanmadan önce öneriyi doğrulama kanalında doğrulamalı veya silmelisin.`)
 		if (db.fetch(`suggestion_${message.guildID}_${sugid}.status`) == "deleted") return message.channel.createMessage(`Bu öneri silinmiş!`)
+		if (db.fetch(`suggestion_${message.guildID}_${sugid}.comments`).length >= 10) return message.channel.createMessage(`Önerilerde yorum limiti öneri başına 10 yorumdur, yorum yapmadan önce bir yorum silinmeli.`)
 		if (!args[1]) return message.channel.createMessage(`Bir yorum belirtmelisin.`)
-		addComment(message, guild, sugid, args.slice(1).join(' '), message.author.id, client, dil, true)
+		if (args.slice(1).join(' ').length > 512) return message.channel.createMessage(`Yorum uzunluğu maksimum 512 karakter olmalıdır.`)
+		addComment(message, guild, sugid, args.slice(1).join(' '), message.author.id, client, dil, true, true)
 	}
 }
 

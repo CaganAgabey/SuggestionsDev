@@ -1,19 +1,22 @@
 const settings = require("./settings.json")
 const Sharder = require('eris-sharder').Master;
+const fs = require('fs')
 const sharder = new Sharder(settings.token, "/sharder.js", {
   stats: true,
   debug: false,
-  guildsPerShard: 250,
+  guildsPerShard: 150,
   name: "Suggestions",
   clientOptions: {
     defaultImageFormat: "png",
     defaultImageSize: 32,
     messageLimit: 500
   },
-  clusterTimeout: 7
+  clusterTimeout: 5
 });
-const arkdb = require('ark.db')
-const db = new arkdb.Database('./arkdb.json')
 const client = sharder.eris;
 
-sharder.on('stats', async stats => db.set(`totalservers`, stats.guilds))
+sharder.on('stats', async stats => {
+  fs.writeFile('totalservers.txt', stats.guilds.toString(), async err => {
+    if (err) console.error(err)
+  })
+})
