@@ -5,7 +5,7 @@ const settings = require("./settings.json")
 const arkdb = require('ark.db');
 const db = new arkdb.Database()
 const awaitingsuggestions = new Map()
-const version = "1.1";
+const version = "1.1.1";
 const {manageSuggestion, deleteSuggestion, sendSuggestion, verifySuggestion} = require('./functions')
 
 class Class extends Base {
