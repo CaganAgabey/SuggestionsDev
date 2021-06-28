@@ -12,7 +12,6 @@ class Class extends Base {
 	constructor(bot) {
 		super(bot);
 	}
-	
 	async launch() {
 		const client = this.bot
 		client.db = db
