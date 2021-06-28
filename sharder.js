@@ -153,7 +153,7 @@ class Class extends Base {
 			if (!message.guildID) return;
 			if (!db.has(`suggestionchannel_${message.guildID}`)) return;
 			if (db.has(`suggestionchannel_${message.guildID}`) && db.fetch(`suggestionchannel_${message.guildID}`) != message.channel.id) return;
-			console.log(emoji)
+			if (!db.has(`ownervoting_${message.guildID}`) && !db.has(`multiplevoting_${message.guildID}`) && !db.has(`autoapprove_${message.guildID}`) && !db.has(`autodeny_${message.guildID}`)) return;
 			client.guilds.get(message.guildID).channels.get(message.channel.id).getMessage(message.id).then(async msg => {
 				const sugid = Number(msg.embeds[0].title.replace('Suggestion #', '').replace('Öneri #', ''))
 				const sugname = `suggestion_${msg.guildID}_${sugid}`
@@ -162,25 +162,20 @@ class Class extends Base {
 				let react;
 				if (emoji.id) react = emoji.name + ':' + emoji.id
 				if (!emoji.id) react = emoji.name
-				let reacttype;
-				if (!db.has(`customapprove_${message.guildID}`) && react == `👍`) reacttype = 'approve'
-				if (!db.has(`customdeny_${message.guildID}`) && react == `👎`) reacttype = 'deny'
-				if (db.has(`customapprove_${message.guildID}`) && react == db.fetch(`customapprove_${message.guildID}`)) reacttype = 'approve'
-				if (db.has(`customdeny_${message.guildID}`) && react == db.fetch(`customdeny_${message.guildID}`)) reacttype = 'deny'
-				let otheremoji;
-				if (reacttype == 'approve') {
-					if (!db.has(`customdeny_${message.guildID}`)) otheremoji = `👎`
-					if (db.has(`customdeny_${message.guildID}`)) otheremoji = db.fetch(`customdeny_${message.guildID}`)
-				}
-				if (reacttype == 'deny') {
-					if (!db.has(`customapprove_${message.guildID}`)) otheremoji = `👍`
-					if (db.has(`customapprove_${message.guildID}`)) otheremoji = db.fetch(`customapprove_${message.guildID}`)
-				}
+				let reacttype = '0';
+				if (db.fetch(`${sugname}.approveemoji`) == react) reacttype = 'approve'
+				if (db.fetch(`${sugname}.denyemoji`) == react) reacttype = 'deny'
+				if (reacttype == '0') return;
+				let otheremoji = '0'
+				if (reacttype == 'approve') otheremoji = db.fetch(`${sugname}.denyemoji`)
+				if (reacttype == 'deny') otheremoji = db.fetch(`${sugname}.approveemoji`)
+				if (otheremoji == '0') return;
 				msg.getReaction(react).then(async rec => {
 					if (db.has(`ownervoting_${message.guildID}`) && db.fetch(`${sugname}.author`) == user.id && rec.find(x => x.id == user.id)) {
 						client.users.get(user.id).getDMChannel().then(async ch => ch.createMessage(`You can't vote to your suggestion in this server.`))
 						return msg.removeReaction(react, user.id)
 					}
+					if (!db.has(`multiplevoting_${message.guildID}`) && !db.has(`autoapprove_${message.guildID}`) && !db.has(`autodeny_${message.guildID}`)) return;
 					msg.getReaction(otheremoji).then(async recc => {
 						if (db.has(`multiplevoting_${message.guildID}`) && rec.find(x => x.id == user.id) && recc.find(x => x.id == user.id)) {
 							client.users.get(user.id).getDMChannel().then(async ch => ch.createMessage(`Multiple voting is not allowed in this server. You must vote in only one reaction.`))

@@ -87,7 +87,6 @@ async function addComment(message, guild, sugid, comment, commenter, client, lan
 }
 
 module.exports = {
-	
 	addComment: async (message, guild, sugid, comment, commenter, client, language, senddm, reloadmessage) => {
 		const db = client.db
 		const data = db.fetch(`suggestion_${guild.id}_${sugid}`)
