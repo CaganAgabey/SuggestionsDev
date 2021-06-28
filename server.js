@@ -4,7 +4,7 @@ const fs = require('fs')
 const sharder = new Sharder(settings.token, "/sharder.js", {
   stats: true,
   debug: false,
-  guildsPerShard: 150,
+  guildsPerShard: 100,
   name: "Suggestions",
   clientOptions: {
     defaultImageFormat: "png",

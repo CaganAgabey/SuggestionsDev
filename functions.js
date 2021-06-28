@@ -237,8 +237,8 @@ module.exports = {
 						description: data.suggestion,
 						color,
 						author: {
-							name: language == "english" ? `${displaytype} suggestion - ${client.users.has(data.author) ? `${author.username}#${author.discriminator}` : msg.embeds[0].author.name.split(' - ')[1]}` : `${displaytype} öneri - ${client.users.has(data.author) ? `${author.username}#${author.discriminator}` : msg.embeds[0].author.name.split(' - ')[1]}`,
-							icon_url: client.users.has(data.author) ? author.avatarURL || author.defaultAvatarURL : msg.embeds[0].author.icon_url
+							name: language == "english" ? `${displaytype} suggestion - ${msg.embeds[0].author.name.split(' - ')[1]}` : `${displaytype} öneri - ${msg.embeds[0].author.name.split(' - ')[1]}`,
+							icon_url: msg.embeds[0].author.icon_url
 						},
 						footer: {
 							text: client.user.username,
@@ -258,8 +258,8 @@ module.exports = {
 						description: data.suggestion,
 						color,
 						author: {
-							name: language == "english" ? `${displaytype} suggestion - ${client.users.has(data.author) ? `${author.username}#${author.discriminator}` : msg.embeds[0].author.name.split(' - ')[1]}` : `${displaytype} öneri - ${client.users.has(data.author) ? `${author.username}#${author.discriminator}` : msg.embeds[0].author.name.split(' - ')[1]}`,
-							icon_url: client.users.has(data.author) ? author.avatarURL || author.defaultAvatarURL : msg.embeds[0].author.icon_url
+							name: language == "english" ? `${displaytype} suggestion - ${msg.embeds[0].author.name.split(' - ')[1]}` : `${displaytype} öneri - ${msg.embeds[0].author.name.split(' - ')[1]}`,
+							icon_url: msg.embeds[0].author.icon_url
 						},
 						footer: {
 							text: client.user.username,
@@ -483,8 +483,8 @@ module.exports = {
 				description: data.suggestion,
 				color: colorToSignedBit("#00FFFF"),
 				author: {
-					name: language == "english" ? `New suggestion - ${client.users.has(data.author) ? `${author.username}#${author.discriminator}` : message.embeds[0].author.name.split(' - ')[1]}` : `Yeni öneri - ${client.users.has(data.author) ? `${author.username}#${author.discriminator}` : message.embeds[0].author.name.split(' - ')[1]}`,
-					icon_url: client.users.has(data.author) ? author.avatarURL || author.defaultAvatarURL : message.embeds[0].author.icon_url
+					name: language == "english" ? `New suggestion - ${message.embeds[0].author.name.split(' - ')[1]}` : `Yeni öneri - ${message.embeds[0].author.name.split(' - ')[1]}`,
+					icon_url: message.embeds[0].author.icon_url
 				},
 				footer: {
 					text: client.user.username,
