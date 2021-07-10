@@ -1,22 +1,21 @@
+const { isMaster } = require('cluster');
 const settings = require("./settings.json")
-const Sharder = require('eris-sharder').Master;
+const Sharder = require('eris-fleet');
 const fs = require('fs')
-const sharder = new Sharder(settings.token, "/sharder.js", {
-  stats: true,
-  debug: false,
-  guildsPerShard: 100,
-  name: "Suggestions",
+const path = require("path");
+const sharder = new Sharder.Fleet( {
+  token: 'Bot ' + settings.token,
+  path: path.join(__dirname, "./sharder.js"),
+  guildsPerShard: 150,
   clientOptions: {
     defaultImageFormat: "png",
     defaultImageSize: 32,
     messageLimit: 500
-  },
-  clusterTimeout: 5
+  }
 });
-const client = sharder.eris;
 
-sharder.on('stats', async stats => {
-  fs.writeFile('totalservers.txt', stats.guilds.toString(), async err => {
-    if (err) console.error(err)
-  })
-})
+if (isMaster) {
+  sharder.on('stats', async stats => fs.writeFile('totalservers.txt', stats.guilds.toString(), async err => {
+        if (err) console.error(err)
+  }))
+}

@@ -1,89 +1,74 @@
-const Base = require('eris-sharder').Base;
+const { BaseServiceWorker } = require('eris-fleet');
 const Eris = require('eris');
 const fs = require('fs');
 const settings = require("./settings.json")
 const arkdb = require('ark.db');
 const db = new arkdb.Database()
 const awaitingsuggestions = new Map()
-const version = "1.1";
+const version = "1.2";
 const {manageSuggestion, deleteSuggestion, sendSuggestion, verifySuggestion} = require('./functions')
 
-class Class extends Base {
+function colorToSignedBit(s) {
+	return (parseInt(s.substr(1), 16) << 8) / 256;
+}
+
+function sleep(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+module.exports = class ServiceWorker extends BaseServiceWorker {
+	
 	constructor(bot) {
 		super(bot);
-	}
-	
-	async launch() {
+		
 		const client = this.bot
 		client.db = db
 		client.commands = new Eris.Collection(undefined, undefined);
 		client.aliases = new Eris.Collection(undefined, undefined);
 		
-		function sleep(ms) {
-			return new Promise(resolve => setTimeout(resolve, ms));
-		}
-		
-		function colorToSignedBit(s) {
-			return (parseInt(s.substr(1), 16) << 8) / 256;
-		}
-		
 		client.editStatus("online", {name: `.help | .invite | v${version}`, type: 5})
-		if (client.guilds.has('662632169277227009')) client.guilds.get('662632169277227009').fetchMembers({userIDs: [ "343412762522812419" ]})
 		
 		fs.readdir("commands", async (err, files) => {
 			const jsfile = files.filter(f => f.split(".").pop() == "js");
 			if (jsfile.length <= 0 || err || !files) {
-				console.log("Unable to find commands.");
+				console.log("Unable to find commands, shutting down.");
 				return process.exit(0)
 			}
 			for (const f of jsfile) {
 				const props = require(`./commands/${f}`);
 				console.log(`${f} loaded`);
 				client.commands.set(props.help.name, props);
+				client.aliases.set(props.help.nametr, props)
 				for (const aliase of props.help.aliase) {
-					client.aliases.set(aliase, props)
+					if (!client.aliases.has(aliase)) client.aliases.set(aliase, props)
 				}
 			}
 			console.log("All commands have been loaded successfully.")
 		});
 		
-		client.on("messageCreate", async message => {
+		client.on('messageCreate', async message => {
 			if (message.author.bot) return;
-			if (!message.guildID) return message.channel.createMessage(`You can't use commands via DMs in this bot. You can only receive suggestion updates via DMs in this bot.`)
+			if (!message.guildID) return;
 			const prefix = message.guildID ? db.fetch(`prefix_${message.guildID}`) || "." : ".";
-			if (!message.content.startsWith(prefix)) return;
 			const messageArray = message.content.split('  ').join(' ').split(" ");
 			const cmd = messageArray[0];
 			let commandfile = client.commands.get(cmd.slice(prefix.length));
 			if (!commandfile) commandfile = client.aliases.get(cmd.slice(prefix.length))
-			if (!commandfile) return;
-			const args = messageArray.slice(1);
 			const guild = client.guilds.get(message.guildID)
-			guild.fetchMembers({userIDs: [ client.user.id ]})
 			const guildme = guild.members.get(client.user.id)
 			if (!guildme.permissions.has('sendMessages')) return message.author.getDMChannel().then(ch => ch.createMessage(`That bot doesn't have send messages permission in this guild.`))
 			if (!guildme.permissions.has('manageMessages') || !guildme.permissions.has('embedLinks') || !guildme.permissions.has('addReactions')) return message.channel.createMessage(`The bot should have Manage Messages, Embed Links and Add Reactions permissions in order to work properly.`)
-			if (commandfile) commandfile.run(client, message, args);
-		})
-		
-		client.on('messageCreate', async message => {
-			if (message.author.bot) return;
-			if (!message.guildID) return;
-			if (!db.has(`suggestionchannel_${message.guildID}`)) return;
-			if (db.fetch(`suggestionchannel_${message.guildID}`) != message.channel.id) return;
-			if (db.has(`disablemessagechannel_${message.guildID}`)) return;
-			const dil = db.fetch(`dil_${message.guildID}`) || "english";
-			const prefix = db.fetch(`prefix_${message.guildID}`) || ".";
-			if (message.content.startsWith(prefix)) return;
-			const guild = client.guilds.get(message.guildID)
 			guild.fetchMembers({userIDs: [ client.user.id ]})
-			const guildme = guild.members.get(client.user.id)
-			if (!guildme.permissions.has('sendMessages')) return message.author.getDMChannel().then(ch => ch.createMessage(`That bot doesn't have send messages permission in this guild.`))
-			if (!guildme.permissions.has('manageMessages') || !guildme.permissions.has('embedLinks') || !guildme.permissions.has('addReactions')) return message.channel.createMessage(`The bot should have Manage Messages, Embed Links and Add Reactions permissions in order to work properly.`)
-			sendSuggestion(message, message.content.slice(0, 1024), guild, client, dil, true)
-			message.delete()
+			if (!commandfile && !message.content.startsWith(prefix)) {
+				if (!db.has(`suggestionchannel_${message.guildID}`) || db.fetch(`suggestionchannel_${message.guildID}`) != message.channel.id || db.has(`disablemessagechannel_${message.guildID}`)) return;
+				const dil = db.fetch(`dil_${message.guildID}`) || "english";
+				sendSuggestion(message, message.content.slice(0, 2048), guild, client, dil, true)
+				message.delete()
+			} else {
+				const args = messageArray.slice(1);
+				commandfile.run(client, message, args);
+			}
 		})
-		
 		client.on('guildCreate', async guild => {
 			let role = null;
 			const everyonerole = guild.roles.find(r => r.name.toLowerCase().includes("everyone"))
@@ -129,10 +114,11 @@ class Class extends Base {
 			}
 			if (channel == 0) channel = channels[0]
 			this.ipc.fetchUser('343412762522812419').then(async user => {
+				const owner = user == null ? {username: 'Çağan', discriminator: '0000'} : user;
 				channel.createMessage({
 					embed: {
 						title: '**__Thanks for adding Suggestions bot!__**',
-						description: `This bot allows you to manage your suggestions in server easily. You can see the possible commands with **.help** command.\nThis bot won't work if you don't set any suggestion channel.\n \n**You can get help about the bot setup** With **.setupinfo** command.\n \n**This bot made by** ${user.username}#${user.discriminator}\n \n**If you have any cool idea for bot** Use **.botsuggest** command to send suggestions to owner.\n \n**Note:** In order to work properly, bot should have Manage Messages, Embed Links and Add Reactions permission.\n \n**Note for Turkish:** Eğer botu Türkçe kullanmak istiyorsanız \`.language turkish\` komuduyla botu Türkçe yapabilirsiniz, Türkçe yaptıktan sonra \`.kurulumbilgi\` ile bilgi alabilirsiniz`,
+						description: `This bot allows you to manage your suggestions in server easily. You can see the possible commands with **.help** command.\nThis bot won't work if you don't set any suggestion channel.\n \n**You can get help about the bot setup** With **.setupinfo** command.\n \n**This bot made by** ${owner.username}#${owner.discriminator}\n \n**If you have any cool idea for bot** Use **.botsuggest** command to send suggestions to owner.\n \n**Note:** In order to work properly, bot should have Manage Messages, Embed Links and Add Reactions permission.\n \n**Note for Turkish:** Eğer botu Türkçe kullanmak istiyorsanız \`.language turkish\` komuduyla botu Türkçe yapabilirsiniz, Türkçe yaptıktan sonra \`.kurulumbilgi\` ile bilgi alabilirsiniz`,
 						color: colorToSignedBit("#2F3136"),
 						author: {
 							name: client.user.username,
@@ -225,11 +211,9 @@ class Class extends Base {
 		})
 		
 		client.on('error', async error => console.error(error.stack))
-		
-		client.shar
-		
-		client.connect()
+	}
+	
+	shutdown(done) {
+		done();
 	}
 }
-
-module.exports = Class;
